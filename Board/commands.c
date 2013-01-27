@@ -382,15 +382,19 @@ static int _F10_Handler (void)
 static int _F11_Handler (void)
 {
 	uint8_t SendData[3];
-
-	//Turn on excitation currents
-	SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_10UA);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
-
+	
 	printf_P(PSTR("Taking measurements...\n"));
 	
-	//Set up channel 2
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	//Turn on excitation current to red thermistor
+	SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+
+	//Set up channel 2 (red thermistor)
+	//	-Unipolar
+	//	-Gain of 2
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN2);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
@@ -399,8 +403,16 @@ static int _F11_Handler (void)
 	AD7794WaitReady();
 	printf_P(PSTR("Red: %lu counts\n"), AD7794GetData() );
 	
-	//Set up channel 3
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	//Turn on excitation current to black thermistor
+	SendData[0] = (AD7794_IO_DIR_IOUT2 | AD7794_IO_10UA);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	
+	//Set up channel 3 (black thermistor)
+	//	-Unipolar
+	//	-Gain of 2
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN3);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
@@ -443,8 +455,9 @@ static int _F11_Handler (void)
 	AD7794WaitReady();
 	printf_P(PSTR("Heater Current: %lu counts\n"), AD7794GetData() );
 	
-	
-	AD7794InternalTempCal(2525);
+	//printf_P(PSTR("type stuff\n"));
+	//GetNewCommand();
+	//AD7794InternalTempCal(2525);
 	
 	return 0;
 }

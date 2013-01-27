@@ -25,7 +25,7 @@
 
 #include "main.h"
 
-uint8_t EEMEM AD7794_INTERNAL_TEMP_CAL[3];		//Store the internal temperature calibration in non-volatile memory
+uint8_t EEMEM NV_AD7794_INTERNAL_TEMP_CAL[3];		//Store the internal temperature calibration in non-volatile memory
 
 void AD7794Init( void )
 {
@@ -213,7 +213,7 @@ uint8_t AD7794InternalTempCal(uint32_t CurrentTemp)
 	uint32_t RunningSum = 0;
 	uint8_t TempCalArray[3];
 	
-	eeprom_read_block ((void *)&TempCalArray, (const void *)&AD7794_INTERNAL_TEMP_CAL , 3);
+	eeprom_read_block ((void *)&TempCalArray, (const void *)&NV_AD7794_INTERNAL_TEMP_CAL , 3);
 	
 	printf_P(PSTR("Current calibration value is 0x%02X%02X%02X\n"), TempCalArray[2], TempCalArray[1], TempCalArray[0]);
 	
@@ -250,7 +250,7 @@ uint8_t AD7794InternalTempCal(uint32_t CurrentTemp)
 	
 	printf_P(PSTR("New calibration value is 0x%02X%02X%02X\n"), TempCalArray[2], TempCalArray[1], TempCalArray[0]);
 	
-	eeprom_update_block((const void *)&TempCalArray, (void *)AD7794_INTERNAL_TEMP_CAL, 3);
+	eeprom_update_block((const void *)&TempCalArray, (void *)NV_AD7794_INTERNAL_TEMP_CAL, 3);
 	
 	return 0;
 }

@@ -27,6 +27,16 @@
 
 volatile uint16_t	ElapsedMS;
 
+/**Saftey limits. If these temperatures are exceeded, the relay will be shut off. */
+uint8_t EEMEM NV_RED_TEMP_SAFTEY_LIMIT[3];			//The maximum allowable temperature on the red thermistor
+uint8_t EEMEM NV_BLACK_TEMP_SAFTEY_LIMIT[3];		//The maximum allowable temperature on the black thermistor
+uint8_t EEMEM NV_INTERNAL_TEMP_SAFTEY_LIMIT[3];		//The maximum allowable temperature on the ADC temperature sensor
+
+uint8_t EEMEM NV_SET_TEMPERATURE[3];				//The target fermentation temperature
+uint8_t EEMEM NV_TEMP_REGULATING = 0;				//Set to 1 when the temperature regulation is active
+uint8_t EEMEM NV_CURRENT_ZERO_CAL[3];				//The zero point for the current calibration
+
+
 void HardwareInit( void )
 {
 	ElapsedMS	= 0x0000;
