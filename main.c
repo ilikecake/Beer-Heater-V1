@@ -31,7 +31,7 @@
 /** \file
  *
  *  Main source file for the Beer Heater. This file contains the main loop
- *  and is responsible for the initial application hardware configuration..
+ *  and is responsible for the initial application hardware configuration.
  */
 
 #include "main.h"
