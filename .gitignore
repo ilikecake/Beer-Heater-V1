@@ -15,3 +15,17 @@
 *.exe
 *.out
 *.app
+
+# AVR Build files
+*/.dep/*
+*.eep
+*.elf
+*.hex
+*.lss
+*.lst
+*.map
+*.sym
+*.d
+
+#doxygen docs
+*/docs/*
