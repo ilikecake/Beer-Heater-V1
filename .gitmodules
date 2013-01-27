@@ -1,3 +1,6 @@
 [submodule "lufa"]
 	path = lufa
 	url = git@github.com:abcminiuser/lufa.git
+[submodule "common"]
+	path = common
+	url = ../AVR-Common.git
