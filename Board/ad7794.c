@@ -207,13 +207,51 @@ uint32_t AD7794GetData( void )
 */
 uint8_t AD7794InternalTempCal(uint32_t CurrentTemp)
 {
+	uint8_t i;
 	int32_t TempCorrectionCounts;
+	uint8_t SendData[2];
+	uint32_t RunningSum = 0;
+	uint8_t TempCalArray[3];
 	
+	eeprom_read_block ((void *)&TempCalArray, (const void *)&AD7794_INTERNAL_TEMP_CAL , 3);
+	
+	printf_P(PSTR("Current calibration value is 0x%02X%02X%02X\n"), TempCalArray[2], TempCalArray[1], TempCalArray[0]);
+	
+	//This is the number of ADC counts (theoretically) between the input temperature and the reference temperature of 20C
 	TempCorrectionCounts = ((CurrentTemp-AD7794_TEMP_CAL_REF_TEMP)*AD7794_TEMP_CAL_X) / AD7794_TEMP_CAL_Y;
 	TempCorrectionCounts = TempCorrectionCounts + ((CurrentTemp-AD7794_TEMP_CAL_REF_TEMP)*AD7794_TEMP_CAL_Z);
 	
-	printf("TCC: %lu\n", TempCorrectionCounts);
+	printf("Correction: %lu\n", TempCorrectionCounts);
+	printf_P(PSTR("Taking 10 readings from internal temperature sensor...\n"));
+	
+	//Measure internal temperature
+	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_CONTINUOUS;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	
+	for(i=0;i<10;i++)
+	{
+		AD7794WaitReady();
+		RunningSum += AD7794GetData();
+		
+	}
 
+	RunningSum = RunningSum/i;
+
+	printf_P(PSTR("Internal Temperature: %lu counts\n"), RunningSum);
+	
+	RunningSum = RunningSum-TempCorrectionCounts;	
+	TempCalArray[0] = (uint8_t)(RunningSum&0xFF);
+	TempCalArray[1] = (uint8_t)((RunningSum>>8)&0xFF);
+	TempCalArray[2] = (uint8_t)((RunningSum>>16)&0xFF);
+	
+	printf_P(PSTR("New calibration value is 0x%02X%02X%02X\n"), TempCalArray[2], TempCalArray[1], TempCalArray[0]);
+	
+	eeprom_update_block((const void *)&TempCalArray, (void *)AD7794_INTERNAL_TEMP_CAL, 3);
+	
 	return 0;
 }
 

@@ -71,7 +71,6 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
  */
 static FILE USBSerialStream;
 
-
 /** Main program entry point. This routine contains the overall program flow, including initial
  *  setup of all components and the main program loop.
  */
@@ -79,8 +78,6 @@ int main(void)
 {
 	uint8_t OldButtonState;
 	uint8_t NewButtonState;
-	//uint8_t inByte;
-	//SetupHardware();
 	HardwareInit();
 
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
@@ -93,13 +90,6 @@ int main(void)
 	OldButtonState = GetButtonState();
 	for (;;)
 	{
-		/*inByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
-		if((inByte > 0) && (inByte < 255))
-		{
-			//CDC_Device_SendByte(&VirtualSerial_CDC_Interface, (uint8_t)inByte);
-			CommandGetInputChar(inByte);	//TODO: this should probably move to somewhere else (in an interrupt maybe?)
-		}*/
-
 		RunCommand();
 		
 		//Check button state
@@ -130,9 +120,6 @@ int main(void)
 			}
 			OldButtonState = NewButtonState;
 		}
-		
-		//CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
-		//USB_USBTask();
 	}
 }
 
