@@ -1,4 +1,0 @@
-[submodule "common"]
-	path = common
-	url = git@github.com:ilikecake/AVR-Common.git
-	ignore = dirty
