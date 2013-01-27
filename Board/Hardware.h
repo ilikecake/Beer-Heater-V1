@@ -74,9 +74,9 @@ void RestartTimer(uint16_t *FinalMS, uint16_t *FinalSEC);*/
 
 void LED(uint8_t LEDValue, uint8_t LEDState);
 
-void WaitForAnyKey(void);
-uint8_t GetKeyPress(void);
-bool AnyKeyPressed(void);
+//void WaitForAnyKey(void);
+//uint8_t GetKeyPress(void);
+//bool AnyKeyPressed(void);
 
 void Beep(uint16_t BeepTimeMS);
 void BuzzerOn(void);

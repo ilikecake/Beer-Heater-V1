@@ -196,7 +196,7 @@ void DelayMS(uint16_t ms)
 }
 
 //TODO: put these functions into command.c
-void WaitForAnyKey(void)
+/*void WaitForAnyKey(void)
 {
 	int16_t inByte = 0;
 	while(inByte <= 0)
@@ -204,8 +204,8 @@ void WaitForAnyKey(void)
 		inByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
 	}
 	return;
-}
-
+}*/
+/*
 uint8_t GetKeyPress(void)
 {
 	int16_t inByte = 0;
@@ -223,7 +223,7 @@ bool AnyKeyPressed(void)
 		return false;
 	}
 	return true;
-}
+}*/
 
 void Beep(uint16_t BeepTimeMS)
 {

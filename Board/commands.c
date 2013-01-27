@@ -150,7 +150,7 @@ static int _F2_Handler (void)
 {
 	printf_P(PSTR("Jumping to bootloader. A manual reset will be required\nPress 'y' to continue..."));
 	
-	if(GetKeyPress() == 121)
+	if(WaitForAnyKey() == 'y')
 	{
 		printf_P(PSTR("Jump\n"));
 		DelayMS(100);
@@ -455,7 +455,9 @@ static int _F11_Handler (void)
 	AD7794WaitReady();
 	printf_P(PSTR("Heater Current: %lu counts\n"), AD7794GetData() );
 	
-	//printf_P(PSTR("type stuff\n"));
+	printf_P(PSTR("waiting for key\n"));
+	WaitForAnyKey();
+	printf_P(PSTR("done\n"));
 	//GetNewCommand();
 	//AD7794InternalTempCal(2525);
 	
