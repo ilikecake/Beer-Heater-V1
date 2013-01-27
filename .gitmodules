@@ -1,6 +1,8 @@
 [submodule "lufa"]
 	path = lufa
 	url = git@github.com:abcminiuser/lufa.git
+	ignore = dirty
 [submodule "common"]
 	path = common
 	url = ../AVR-Common.git
+	ignore = dirty
