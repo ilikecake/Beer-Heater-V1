@@ -49,7 +49,7 @@
 #define __LEDS_USBKEY_H__
 
 	/* Includes: */
-		#include "../lufa/LUFA/Common/Common.h"
+		#include "LUFA-120730/Common/Common.h"
 
 	/* Enable C linkage for C++ Compilers: */
 		#if defined(__cplusplus)
