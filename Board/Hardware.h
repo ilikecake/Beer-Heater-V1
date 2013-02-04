@@ -34,26 +34,20 @@
 
 //#include "main.h"
 
-typedef struct 
-{
-	uint16_t	Ms;
-	uint8_t		Sec;
-	uint8_t		Min;
-	uint8_t		Hr;
-	uint16_t	Day;
-} thetime;
+//typedef struct 
+//{
+//	uint16_t	Ms;
+//	uint8_t		Sec;
+//	uint8_t		Min;
+//	uint8_t		Hr;
+//	uint16_t	Day;
+//} thetime;
 
 extern volatile uint8_t ShowTime;
 extern uint8_t USB_ISR_SEMAPHORE;
 
 
-/** initalizes the hardware used for the north pointer
-*	- GPIO directions.
-*	- Pin change interrupt enabled for A/D data ready pin.
-*	- Timer 0 interrupts every 10ms for USB functions.
-*	- Analog supplies on.
-*	- Gyros powered up and out of test mode.
-*/
+/** initalizes the hardware used for the beer heater */
 void HardwareInit( void );
 
 
