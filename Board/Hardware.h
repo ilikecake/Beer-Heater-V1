@@ -28,38 +28,15 @@
 #ifndef _HARDWARE_H_
 #define _HARDWARE_H_
 
-
 #define TCA9554A_ADDRESS	0x38
 
-
 //#include "main.h"
-
-//typedef struct 
-//{
-//	uint16_t	Ms;
-//	uint8_t		Sec;
-//	uint8_t		Min;
-//	uint8_t		Hr;
-//	uint16_t	Day;
-//} thetime;
-
-extern volatile uint8_t ShowTime;
-extern uint8_t USB_ISR_SEMAPHORE;
-
 
 /** initalizes the hardware used for the beer heater */
 void HardwareInit( void );
 
-
-
-
-
-
 void DelayMS(uint16_t ms);
 void DelaySEC(uint16_t SEC);
-
-void GetTime( thetime *time );
-void SetTime( thetime time );
 
 /*
 void StartTimer(void);
