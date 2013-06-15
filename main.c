@@ -76,8 +76,8 @@ static FILE USBSerialStream;
  */
 int main(void)
 {
-	uint8_t OldButtonState;
-	uint8_t NewButtonState;
+	//uint8_t OldButtonState;
+	//uint8_t NewButtonState;
 	HardwareInit();
 
 	/* Create a regular character stream for the interface so that it can be used with the stdio.h functions */
@@ -87,13 +87,13 @@ int main(void)
 	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 	sei();
 
-	OldButtonState = GetButtonState();
+	//OldButtonState = GetButtonState();
 	for (;;)
 	{
 		RunCommand();
 		
 		//Check button state
-		NewButtonState = GetButtonState();
+		/*NewButtonState = GetButtonState();
 		if(NewButtonState != OldButtonState)
 		{
 			if((NewButtonState & 0x01) != (OldButtonState & 0x01))
@@ -119,7 +119,7 @@ int main(void)
 				}
 			}
 			OldButtonState = NewButtonState;
-		}
+		}*/
 	}
 }
 

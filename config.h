@@ -29,6 +29,23 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+#include <avr/pgmspace.h>
+
+
+//Setup for the command interpreter
+#define COMMAND_USER_CONFIG
+#define COMMAND_STAT_SHOW_COMPILE_STRING			1		//Set to 1 to output the compile date/time string in the stat function					
+#define COMMAND_STAT_SHOW_MEM_USAGE					1		//Set to 1 to show the memory usage in the stat function. NOTE: if this is enabled, the mem_usage.c must be included in the makefile
+
+//Based on the setup above
+#if COMMAND_STAT_SHOW_COMPILE_STRING == 1
+	extern const char fwCompileDate[] PROGMEM;				//The compile date/time string. This must be a string in flash called fwCompileDate.
+#endif
+
+#if COMMAND_STAT_SHOW_MEM_USAGE == 1
+	#include "mem_usage.h"									//The header that contains StackCount()
+#endif
+
 //Config for the TWI module
 #define	TWI_USER_CONFIG							//Define this in your user code to allow use of the TWI module
 #undef	TWI_USE_ISR								//Define this to enable interrupt driven TWI interface (this code does not work).
