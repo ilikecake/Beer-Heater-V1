@@ -27,6 +27,9 @@
 
 volatile uint16_t	ElapsedMS;
 
+uint8_t ButtonState;
+uint8_t OldButtonState;
+
 /**Saftey limits. If these temperatures are exceeded, the relay will be shut off. */
 uint8_t EEMEM NV_RED_TEMP_SAFTEY_LIMIT[3];			//The maximum allowable temperature on the red thermistor
 uint8_t EEMEM NV_BLACK_TEMP_SAFTEY_LIMIT[3];		//The maximum allowable temperature on the black thermistor
@@ -40,6 +43,8 @@ uint8_t EEMEM NV_CURRENT_ZERO_CAL[3];				//The zero point for the current calibr
 void HardwareInit( void )
 {
 	ElapsedMS	= 0x0000;
+	OldButtonState = 0xFF;
+	ButtonState = 0xFF;
 	
 	/* Disable watchdog if enabled by bootloader/fuses */
 	MCUSR &= ~(1 << WDRF);
@@ -66,6 +71,11 @@ void HardwareInit( void )
 	TIMSK0 = 0x02;
 	OCR0A = 124;
 
+	//Setup INT2 for button interrupts
+	EICRA = 0x20;	//Interrupt on falling edge of INT2
+	EIFR = 0xFF;	//Clear pending interrupts
+	EIMSK = 0x04;	//Enable INT2
+	
 	
 	
 	/* Check if the Dataflash is working, abort if not */
@@ -94,6 +104,7 @@ void HardwareInit( void )
 	//PORTC = 0x00;
 	
 	//PORT D:
+	//	2:  Button interrupt		(Input)
 	//	4:	A/D CS line				(Out, high)
 	//	6:	Relay control signal	(Out, low)
 	DDRD = (1<<4)|(1<<6);
@@ -307,6 +318,24 @@ ISR(TIMER0_COMPA_vect)
 ISR(TIMER3_COMPA_vect)
 {
 	PORTF ^= (1<<5);
+}
+
+ISR(INT2_vect)
+{
+	MAX7315ReadReg(MAX7315_REG_INPUTS, &ButtonState);
+	
+	if(((ButtonState & (1<<2)) == 0x00) && ((OldButtonState & (1<<2)) == (1<<2)))
+	{
+		printf_P(PSTR("b1\n"));
+	}
+	else if(((ButtonState&(1<<3)) == 0x00) && ((OldButtonState & (1<<3)) == (1<<3)))
+	{
+		printf_P(PSTR("b2\n"));
+	}
+
+
+	//printf_P(PSTR("b\n"));
+	OldButtonState = ButtonState;
 }
 
 /** @} */

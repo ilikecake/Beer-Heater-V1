@@ -91,35 +91,6 @@ int main(void)
 	for (;;)
 	{
 		RunCommand();
-		
-		//Check button state
-		/*NewButtonState = GetButtonState();
-		if(NewButtonState != OldButtonState)
-		{
-			if((NewButtonState & 0x01) != (OldButtonState & 0x01))
-			{
-				if((NewButtonState & 0x01) == 0x01)
-				{
-					printf_P(PSTR("B1 Pushed\n"));
-				}
-				else
-				{
-					printf_P(PSTR("B1 Released\n"));
-				}
-			}
-			else
-			{
-				if((NewButtonState & 0x02) == 0x02)
-				{
-					printf_P(PSTR("B2 Pushed\n"));
-				}
-				else
-				{
-					printf_P(PSTR("B2 Released\n"));
-				}
-			}
-			OldButtonState = NewButtonState;
-		}*/
 	}
 }
 

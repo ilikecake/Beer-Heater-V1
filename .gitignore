@@ -26,6 +26,7 @@
 *.map
 *.sym
 *.d
+version.c
 
 #doxygen docs
 */docs/*
