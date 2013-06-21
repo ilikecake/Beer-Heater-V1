@@ -60,6 +60,7 @@ void HardwareInit( void )
 	/* Hardware Initialization */
 	//LEDs_Init();
 	SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
+	InitTWI();
 
 	
 	//Setup timer 0 for 1ms interrupts
@@ -94,9 +95,8 @@ void HardwareInit( void )
 	
 	//PORT B:
 	//	0: Dataflash CS line	(Out, high)
-	//	6: RTC alarm line		(Input, pullup)
-	//DDRB = 0x00;
-	//PORTB = 0x00;
+	DDRB |= (1<<0);
+	PORTB |= (1<<0);
 	
 	//PORT C:
 	//	6: RTC CS line			(Out, high)
@@ -128,9 +128,9 @@ void HardwareInit( void )
 	TCNT3L = 0x00;
 	
 	//Initalize peripherals
-	DS1390Init();
 	AD7794Init();
 	MAX7315Init();
+	AT45DB321D_Init();
 	
 	//Enable USB and interrupts
 	USB_Init();

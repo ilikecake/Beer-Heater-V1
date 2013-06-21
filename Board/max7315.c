@@ -42,14 +42,12 @@ uint8_t MAX7315ReadReg(uint8_t RegToRead, uint8_t *RegData)
 	if(MAX7315IsReg(RegToRead) == 1)
 	{
 		//Switch to TWI
-		SPI_Disable();
-		InitTWI();
+		//InitTWI();
 		
 		stat = TWIRW(MAX7315_SLA_7B, &RegToRead, RegData, 1, 1);
 		
 		//Switch to SPI
-		DeinitTWI();
-		SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
+		//DeinitTWI();
 		
 		if(stat > 0)
 		{
@@ -70,14 +68,14 @@ uint8_t MAX7315WriteReg(uint8_t RegToWrite, uint8_t RegData)
 		WriteReg[1] = RegData;
 		
 		//Switch to TWI
-		SPI_Disable();
-		InitTWI();
+		//SPI_Disable();
+		//InitTWI();
 		
 		stat = TWIRW(MAX7315_SLA_7B, WriteReg, &RegData, 2, 0);
 		
 		//Switch to SPI
-		DeinitTWI();
-		SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
+		//DeinitTWI();
+		//SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
 		
 		if(stat > 0)
 		{
@@ -101,8 +99,8 @@ uint8_t MAX7315ModifyReg(uint8_t RegToWrite, uint8_t BitData, uint8_t BitMask)
 	}
 
 	//Switch to TWI
-	SPI_Disable();
-	InitTWI();
+	//SPI_Disable();
+	//InitTWI();
 
 	//Read the register
 	WriteReg[0] = RegToWrite;
@@ -117,8 +115,8 @@ uint8_t MAX7315ModifyReg(uint8_t RegToWrite, uint8_t BitData, uint8_t BitMask)
 	stat = TWIRW(MAX7315_SLA_7B, WriteReg, &ReadReg, 2, 0);
 	
 	//Switch to SPI
-	DeinitTWI();
-	SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
+	//DeinitTWI();
+	//SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
 	
 	if(stat > 0)
 	{
