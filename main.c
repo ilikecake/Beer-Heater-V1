@@ -94,23 +94,6 @@ int main(void)
 	}
 }
 
-/** Configures the board hardware and chip peripherals for the demo's functionality. */
-void SetupHardware(void)
-{
-	/* Disable watchdog if enabled by bootloader/fuses */
-	MCUSR &= ~(1 << WDRF);
-	wdt_disable();
-
-	/* Disable clock division */
-	clock_prescale_set(clock_div_1);
-
-	/* Hardware Initialization */
-	LEDs_Init();
-	USB_Init();
-}
-
-
-
 /** Event handler for the library USB Connection event. */
 void EVENT_USB_Device_Connect(void)
 {

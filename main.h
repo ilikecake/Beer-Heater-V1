@@ -52,13 +52,16 @@
 		#include <LUFA-120730/Drivers/Peripheral/SPI.h>
 		
 		#include "twi.h"
+		#include "common_types.h"
 		
 		#include "Board/Hardware.h"
 		#include "commands.h"
 		#include "dfu_jump.h"
-		#include "ds1390.h"
 		#include "ad7794.h"
 		#include "max7315.h"
+		#include "at45db321d.h"
+		#include "datalogger.h"
+		#include "ds3232m.h"
 		
 	/* Macros: */
 		/** LED mask for the library LED driver, to indicate that the USB interface is not ready. */

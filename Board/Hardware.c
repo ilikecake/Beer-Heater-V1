@@ -131,6 +131,7 @@ void HardwareInit( void )
 	AD7794Init();
 	MAX7315Init();
 	AT45DB321D_Init();
+	DS3232M_Init();
 	
 	//Enable USB and interrupts
 	USB_Init();

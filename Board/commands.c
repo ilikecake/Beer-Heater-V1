@@ -173,6 +173,7 @@ static int _F3_Handler (void)
 {
 
 	TimeAndDate CurrentTime;
+	DS3232M_GetTime(&CurrentTime);
 	/*if(DS1390GetTime(&CurrentTime) != 0)
 	{
 		printf_P(PSTR("Error\n"));
@@ -196,6 +197,7 @@ static int _F4_Handler (void)
 	CurrentTime.sec		= argAsInt(6);
 	CurrentTime.dow		= argAsInt(7);
 	
+	DS3232M_SetTime(&CurrentTime);
 	/*if(DS1390SetTime(&CurrentTime) != 0)
 	{
 		printf_P(PSTR("Error\n"));
