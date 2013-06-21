@@ -28,7 +28,7 @@
 
 
 //The number of commands
-const uint8_t NumCommands = 11;
+const uint8_t NumCommands = 12;
 
 //Handler function declerations
 
@@ -98,6 +98,12 @@ const char _F12_NAME[] PROGMEM 			= "twiscan";
 const char _F12_DESCRIPTION[] PROGMEM 	= "Scan for TWI devices";
 const char _F12_HELPTEXT[] PROGMEM 		= "'twiscan' has no parameters";
 
+//Dataflash functions
+static int _F13_Handler (void);
+const char _F13_NAME[] PROGMEM 			= "mem";
+const char _F13_DESCRIPTION[] PROGMEM 	= "dataflash functions";
+const char _F13_HELPTEXT[] PROGMEM 		= "mem <1> <2> <3>";
+
 //Command list
 const CommandListItem AppCommandList[] PROGMEM =
 {
@@ -112,6 +118,7 @@ const CommandListItem AppCommandList[] PROGMEM =
 	{ _F10_NAME,	0,  0,	_F10_Handler,	_F10_DESCRIPTION,	_F10_HELPTEXT	},		//cal
 	{ _F11_NAME,	0,  0,	_F11_Handler,	_F11_DESCRIPTION,	_F11_HELPTEXT	},		//temp
 	{ _F12_NAME,	0,  0,	_F12_Handler,	_F12_DESCRIPTION,	_F12_HELPTEXT	},		//twiscan
+	{ _F13_NAME,	1,  3,	_F13_Handler,	_F13_DESCRIPTION,	_F13_HELPTEXT	},		//twiscan
 };
 
 //Command functions
@@ -166,11 +173,11 @@ static int _F3_Handler (void)
 {
 
 	TimeAndDate CurrentTime;
-	if(DS1390GetTime(&CurrentTime) != 0)
+	/*if(DS1390GetTime(&CurrentTime) != 0)
 	{
 		printf_P(PSTR("Error\n"));
 		return 0;
-	}
+	}*/
 	
 	printf_P(PSTR("%02d/%02d/20%02d %02d:%02d:%02d\n"), CurrentTime.month, CurrentTime.day, CurrentTime.year, CurrentTime.hour, CurrentTime.min, CurrentTime.sec);
 	return 0;
@@ -189,11 +196,11 @@ static int _F4_Handler (void)
 	CurrentTime.sec		= argAsInt(6);
 	CurrentTime.dow		= argAsInt(7);
 	
-	if(DS1390SetTime(&CurrentTime) != 0)
+	/*if(DS1390SetTime(&CurrentTime) != 0)
 	{
 		printf_P(PSTR("Error\n"));
 		return 0;
-	}
+	}*/
 	
 	printf_P(PSTR("Done\n"));
 	return 0;
@@ -446,7 +453,7 @@ static int _F11_Handler (void)
 	printf_P(PSTR("Internal Temperature: %lu counts\n"), AD7794GetData() );
 	
 	//Measure heater current
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[1] = (AD7794_CRH_BIAS_AIN1|AD7794_CRH_BOOST|AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
@@ -467,24 +474,43 @@ static int _F11_Handler (void)
 //Scan the TWI bus for devices
 static int _F12_Handler (void)
 {
-	SPI_Disable();
 	InitTWI();
-
 	TWIScan();
-	
 	DeinitTWI();
-	SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
-	
 	return  0;
 }
 
-//I think this is handled elsewhere...
-/*ISR(USART_RX_vect)
+//Dataflash functions
+static int _F13_Handler (void)
 {
-	uint8_t c;
-	c = UDR0;				//Get char from UART recieve buffer
-	CommandGetInput(c);
-	//UDR0 = c;				//Send char out on UART transmit buffer
-}*/
+	uint8_t arg1 = argAsInt(1);
+	uint8_t arg2;
+	uint8_t arg3;
+	
+	switch (arg1)
+	{
+		case 1:
+			arg2 = argAsInt(2);
+			if(arg2 == 1)
+			{
+				printf_P(PSTR("Dataflash selected\n"));
+				AT45DB321D_Select();
+			}
+			else
+			{
+				printf_P(PSTR("Dataflash deselected\n"));
+				AT45DB321D_Deselect();
+			}
+			break;
+			
+		case 2:
+			arg3 = AT45DB321D_ReadStatus();
+			printf_P(PSTR("Stat: 0x%02X\n"), AT45DB321D_ReadStatus());
+			break;
+	
+	}
+	
+	return  0;
+}
 
 /** @} */
