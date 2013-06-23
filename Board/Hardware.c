@@ -77,20 +77,6 @@ void HardwareInit( void )
 	EIFR = 0xFF;	//Clear pending interrupts
 	EIMSK = 0x04;	//Enable INT2
 	
-	
-	
-	/* Check if the Dataflash is working, abort if not */
-	//if (!(DataflashManager_CheckDataflashOperation()))
-	//{
-	//	LEDs_SetAllLEDs(LEDMASK_USB_ERROR);
-	//	for(;;);
-	//}
-
-
-	
-	
-	
-
 	//Setup GPIO Pins
 	
 	//PORT B:
@@ -207,36 +193,6 @@ void DelayMS(uint16_t ms)
 	return;
 }
 
-//TODO: put these functions into command.c
-/*void WaitForAnyKey(void)
-{
-	int16_t inByte = 0;
-	while(inByte <= 0)
-	{
-		inByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
-	}
-	return;
-}*/
-/*
-uint8_t GetKeyPress(void)
-{
-	int16_t inByte = 0;
-	while(inByte <= 0)
-	{
-		inByte = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
-	}
-	return inByte;
-}
-
-bool AnyKeyPressed(void)
-{
-	if(CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface) <= 0)
-	{
-		return false;
-	}
-	return true;
-}*/
-
 void Beep(uint16_t BeepTimeMS)
 {
 	BuzzerOn();
@@ -286,6 +242,128 @@ void Relay(uint8_t RelayState)
 	}
 	return;
 }
+
+
+
+//Get a full set of data from the A/D converter
+//This function will be used by the datalogger to get data to save
+void GetData(uint8_t *TheData)
+{
+	uint8_t SendData[3];
+	uint32_t TempData;
+	//uint8_t DataLocation;
+	
+	//DataLocation = 0;
+	
+	//Turn on excitation current to red thermistor
+	SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+
+	//Set up channel 2 (red thermistor)
+	//	-Unipolar
+	//	-Gain of 2
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN2);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	TheData[0] = ((TempData>>16) & 0xFF);
+	TheData[1] = ((TempData>>8) & 0xFF);
+	TheData[2] = (TempData & 0xFF);
+	//printf_P(PSTR("Red: %lu counts or %d %d %d\n"), TempData, TheData[0], TheData[1], TheData[2]);
+	
+	//Turn on excitation current to black thermistor
+	SendData[0] = (AD7794_IO_DIR_IOUT2 | AD7794_IO_10UA);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	
+	//Set up channel 3 (black thermistor)
+	//	-Unipolar
+	//	-Gain of 2
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN3);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	TheData[3] = ((TempData>>16) & 0xFF);
+	TheData[4] = ((TempData>>8) & 0xFF);
+	TheData[5] = (TempData & 0xFF);
+	
+	//printf_P(PSTR("Black: %lu counts or %d %d %d\n"), TempData, TheData[3], TheData[4], TheData[5]);
+
+	//Turn off excitation currents
+	SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_OFF);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	
+	//Set up channel 6 (heater voltage)
+	//	-Unipolar
+	//	-Gain of 1
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN6);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	TheData[6] = ((TempData>>16) & 0xFF);
+	TheData[7] = ((TempData>>8) & 0xFF);
+	TheData[8] = (TempData & 0xFF);
+	
+	//printf_P(PSTR("Heater Voltage: %lu counts or %d %d %d\n"), TempData, TheData[6], TheData[7], TheData[8]);
+	
+	//Set up internal temperature
+	//	-Unipolar
+	//	-Gain of 1
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	TheData[9] = ((TempData>>16) & 0xFF);
+	TheData[10] = ((TempData>>8) & 0xFF);
+	TheData[11] = (TempData & 0xFF);
+	
+	//printf_P(PSTR("Internal Temperature: %lu counts or %d %d %d\n"), TempData, TheData[9], TheData[10], TheData[11]);
+	
+	//Set up channel 1 (heater current)
+	//	-Bipolar
+	//	-Gain of 1
+	//	-Internal 1.17V reference
+	//	-Buffered
+	SendData[1] = (AD7794_CRH_BIAS_AIN1|AD7794_CRH_BOOST|AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	TheData[12] = ((TempData>>16) & 0xFF);
+	TheData[13] = ((TempData>>8) & 0xFF);
+	TheData[14] = (TempData & 0xFF);
+	
+	//printf_P(PSTR("Heater Current: %lu counts or %d %d %d\n"), TempData, TheData[12], TheData[13], TheData[14]);
+
+	return;
+}
+
 
 //Timer interrupt 0 for basic timing stuff
 ISR(TIMER0_COMPA_vect)

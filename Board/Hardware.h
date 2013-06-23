@@ -38,6 +38,8 @@ void HardwareInit( void );
 void DelayMS(uint16_t ms);
 void DelaySEC(uint16_t SEC);
 
+void GetData(uint8_t *TheData);
+
 /*
 void StartTimer(void);
 void StopTimer(uint16_t *FinalMS, uint16_t *FinalSEC);
