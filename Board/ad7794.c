@@ -25,7 +25,7 @@
 
 #include "main.h"
 
-uint8_t EEMEM NV_AD7794_INTERNAL_TEMP_CAL[3];		//Store the internal temperature calibration in non-volatile memory
+float EEMEM NV_AD7794_INTERNAL_TEMP_CAL;		//Store the internal temperature calibration in non-volatile memory
 
 void AD7794Init( void )
 {
@@ -201,31 +201,37 @@ uint32_t AD7794GetData( void )
 	return 0;
 }
 
-/**Calibrates the internal temperature sensor. This function assumes that the internal temperature sensor will be read in bipolar mode with the internal 1.17V reference.
+//Functions below this line use floating point math
+#if AD7794_USE_FLOAT == 1
+
+/**Calibrates the internal temperature sensor. This function assumes that the internal temperature sensor will be read in unipolar mode with the internal 1.17V reference.
 *
 *	CurrentTemp The current temperature of the device. This value should be entered as 100 times the temperature in C. EX: 25.48C would be 2548.
+*	
+*	Note: NV_AD7794_INTERNAL_TEMP_CAL is the zero intercept of the temperature calibration. The slope is given in the datasheet.
 */
 uint8_t AD7794InternalTempCal(uint32_t CurrentTemp)
 {
 	uint8_t i;
-	int32_t TempCorrectionCounts;
 	uint8_t SendData[2];
 	uint32_t RunningSum = 0;
-	uint8_t TempCalArray[3];
 	
-	eeprom_read_block ((void *)&TempCalArray, (const void *)&NV_AD7794_INTERNAL_TEMP_CAL , 3);
+	double cal;
+	double slope;
+	double intercept;
+	double TempInput;
+	char OutputString[15];
 	
-	printf_P(PSTR("Current calibration value is 0x%02X%02X%02X\n"), TempCalArray[2], TempCalArray[1], TempCalArray[0]);
+	slope = 0.0001721912F;		//Deg C/count
+	TempInput = (double)CurrentTemp/100.0F;
 	
-	//This is the number of ADC counts (theoretically) between the input temperature and the reference temperature of 20C
-	TempCorrectionCounts = ((CurrentTemp-AD7794_TEMP_CAL_REF_TEMP)*AD7794_TEMP_CAL_X) / AD7794_TEMP_CAL_Y;
-	TempCorrectionCounts = TempCorrectionCounts + ((CurrentTemp-AD7794_TEMP_CAL_REF_TEMP)*AD7794_TEMP_CAL_Z);
-	
-	printf("Correction: %lu\n", TempCorrectionCounts);
+	cal = eeprom_read_float(&NV_AD7794_INTERNAL_TEMP_CAL);
+	dtostrf(cal, 9, 4, OutputString);
+	printf_P(PSTR("Current calibrated zero is: %s\n"), OutputString);
 	printf_P(PSTR("Taking 10 readings from internal temperature sensor...\n"));
 	
 	//Measure internal temperature
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_CONTINUOUS;
@@ -240,21 +246,53 @@ uint8_t AD7794InternalTempCal(uint32_t CurrentTemp)
 	}
 
 	RunningSum = RunningSum/i;
-
 	printf_P(PSTR("Internal Temperature: %lu counts\n"), RunningSum);
 	
-	RunningSum = RunningSum-TempCorrectionCounts;	
-	TempCalArray[0] = (uint8_t)(RunningSum&0xFF);
-	TempCalArray[1] = (uint8_t)((RunningSum>>8)&0xFF);
-	TempCalArray[2] = (uint8_t)((RunningSum>>16)&0xFF);
+	intercept = TempInput - slope*(double)RunningSum;
+	dtostrf(intercept, 9, 4, OutputString);
+	printf_P(PSTR("New calibration is: %s\n"), OutputString);
 	
-	printf_P(PSTR("New calibration value is 0x%02X%02X%02X\n"), TempCalArray[2], TempCalArray[1], TempCalArray[0]);
-	
-	eeprom_update_block((const void *)&TempCalArray, (void *)NV_AD7794_INTERNAL_TEMP_CAL, 3);
-	
+	//eeprom_update_block((const void *)&TempCalArray, (void *)NV_AD7794_INTERNAL_TEMP_CAL, 3);
+	eeprom_update_float(&NV_AD7794_INTERNAL_TEMP_CAL, intercept);
 	return 0;
 }
 
+/**Returns the internal temperature if the device in degrees C*10000. (ex: 23.4567 would return 234567)
+*
+*	Note: The returned value should never be larger than 24 bits. It can probably be stored in a 24 bit number in the dataflash to save space.
+*	TODO: Add a check to make sure the calibration data exsists
+*/
+int32_t AD7794GetInternalTemp(void)
+{
+	uint8_t SendData[2];
+	uint32_t ADCData = 0;
 
+	double slope;
+	double intercept;
+	double InternalTemp;
+	//char OutputString[20];
+	
+	slope = 0.0001721912F;		//Deg C/count
+	intercept = eeprom_read_float(&NV_AD7794_INTERNAL_TEMP_CAL);
+	
+	//Measure internal temperature
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	ADCData = AD7794GetData();
+	
+	InternalTemp = slope*(double)ADCData + intercept;
+	
+	//dtostrf(InternalTemp, 9, 4, OutputString);
+	//printf_P(PSTR("Internal temperature is: %s C\n"), OutputString);
+	
+	return ((int32_t)(InternalTemp*10000.0F));
+}
+
+#endif
 
 /** @} */

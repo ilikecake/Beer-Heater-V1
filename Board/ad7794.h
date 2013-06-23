@@ -28,6 +28,14 @@
 #ifndef _AD7794_H_
 #define _AD7794_H_
 
+//Setup info
+
+//Set to 1 to enable floating point. The proper libraries and includes need to be set.
+#define AD7794_USE_FLOAT			1
+
+
+
+
 //Control register setup
 #define AD7794_CR_IGNORE			0x80
 #define AD7794_CR_READ				0x40
@@ -133,6 +141,7 @@
 //The reference value for temperature is 20C
 //These values are calculated as the values needed to convert the difference between the current temperature and the reference temperature in 100 times degrees C to the number of counts.
 //The equation is counts = ((Tcurrent - Tref)*100) * ((X/Y)+Z)
+//The quantity ((X/Y)+Z) represents the slope of the internal temperature sensor in V/(100*deg C) when the part is in bipolar mode.
 #define AD7794_TEMP_CAL_REF_TEMP	2000
 #define AD7794_TEMP_CAL_X			1755
 #define AD7794_TEMP_CAL_Y			23400
@@ -147,14 +156,15 @@ uint8_t AD7794WaitReady( void );
 bool AD7794ReadReg(uint8_t reg, uint8_t *DataToRead);
 bool AD7794WriteReg(uint8_t reg, uint8_t *DataToWrite);
 
-
-
-
 uint32_t AD7794GetData( void );
 
+
+//These functions use floating point math
+//TODO: Add basic functions that do not use floating point?
+#if AD7794_USE_FLOAT == 1
 uint8_t AD7794InternalTempCal(uint32_t CurrentTemp);
-
-
+int32_t AD7794GetInternalTemp(void);
+#endif
 
 
 
