@@ -28,7 +28,7 @@
 
 
 //The number of commands
-const uint8_t NumCommands = 12;
+const uint8_t NumCommands = 13;
 
 //Handler function declerations
 
@@ -67,6 +67,12 @@ static int _F6_Handler (void);
 const char _F6_NAME[] PROGMEM 			= "adwrite";
 const char _F6_DESCRIPTION[] PROGMEM 	= "write to a register on the ADC";
 const char _F6_HELPTEXT[] PROGMEM 		= "adwrite <register> <data>";
+
+//Set up the calibration for the internal temperature sensor
+static int _F7_Handler (void);
+const char _F7_NAME[] PROGMEM 			= "tempcal";
+const char _F7_DESCRIPTION[] PROGMEM 	= "Calibrate the internal temperature sensor";
+const char _F7_HELPTEXT[] PROGMEM 		= "'tempcal' has no parameters";
 
 //Test the buzzer
 static int _F8_Handler (void);
@@ -113,6 +119,7 @@ const CommandListItem AppCommandList[] PROGMEM =
 	{ _F4_NAME, 	7,  7,	_F4_Handler,	_F4_DESCRIPTION,	_F4_HELPTEXT	},		//settime
 	{ _F5_NAME, 	1,  1,	_F5_Handler,	_F5_DESCRIPTION,	_F5_HELPTEXT	},		//adread
 	{ _F6_NAME, 	2,  2,	_F6_Handler,	_F6_DESCRIPTION,	_F6_HELPTEXT	},		//adwrite	
+	{ _F7_NAME, 	0,  0,	_F7_Handler,	_F7_DESCRIPTION,	_F7_HELPTEXT	},		//tempcal
 	{ _F8_NAME,		1,  1,	_F8_Handler,	_F8_DESCRIPTION,	_F8_HELPTEXT	},		//beep
 	{ _F9_NAME,		1,  1,	_F9_Handler,	_F9_DESCRIPTION,	_F9_HELPTEXT	},		//relay
 	{ _F10_NAME,	0,  0,	_F10_Handler,	_F10_DESCRIPTION,	_F10_HELPTEXT	},		//cal
@@ -269,6 +276,74 @@ static int _F6_Handler (void)
 	return 0;
 }
 
+//tempcal
+static int _F7_Handler (void)
+{
+	char RedOutput[10];
+	char BlackOutput[10];
+	char selection;
+	uint8_t Dataset[16];
+	uint32_t TempData;
+	uint8_t i;
+	uint8_t j;
+	
+	printf_P(PSTR("Taking measurements...\n"));
+	GetData(Dataset);
+	
+	//Process the temperature data
+	TempData = (((uint32_t)Dataset[0]<<16) | ((uint32_t)Dataset[1]<<8) | (uint32_t)Dataset[2]);
+	ThermistorCountsToTemp(TempData, RedOutput);
+	TempData = (((uint32_t)Dataset[3]<<16) | ((uint32_t)Dataset[4]<<8) | (uint32_t)Dataset[5]);
+	ThermistorCountsToTemp(TempData, BlackOutput);
+	
+	printf_P(PSTR("Select temperature source\n"));
+	printf_P(PSTR("[1] Red:   %s C\n"), RedOutput);
+	printf_P(PSTR("[2] Black: %s C\n"), BlackOutput);
+	printf_P(PSTR("[3] Manual input\n"));
+	
+	selection = WaitForAnyKey()-48;
+	
+	if(selection == 1)
+	{
+		printf_P(PSTR("Calibrating using red\n"));
+		TempData = 0;
+		for(i=0; i<10; i++)
+		{
+			if(RedOutput[i] != 32)	//the first non-space character
+			{
+				if(RedOutput[i] == 46)	//decimal
+				{
+					TempData = (TempData*100) + ((RedOutput[i+1]-48)*10) + (RedOutput[i+2]-48);
+					break;
+				}
+				else
+				{
+					TempData = TempData*10 + (RedOutput[i]-48);
+				}
+			}
+		}
+		printf_P(PSTR("Calibration code: %lu\n"), TempData);
+		AD7794InternalTempCal(TempData);
+	}
+	else if(selection == 2)
+	{
+		printf_P(PSTR("Calibrating using black\n"));
+	}
+	else if(selection == 2)
+	{
+		printf_P(PSTR("Calibrating using custon\n"));
+	}
+	else
+	{
+		printf_P(PSTR("Invalid input\n"));
+	}
+	
+	//printf("I heard %d\n", selection);
+	
+	
+	return 0;
+}
+
 //Test the buzzer
 static int _F8_Handler (void)
 {
@@ -390,10 +465,36 @@ static int _F10_Handler (void)
 //Get temperatures from the ADC
 static int _F11_Handler (void)
 {
-	uint8_t SendData[3];
+	char TempOutput[9];
+	uint8_t Dataset[16];
+	uint32_t TempData;
 	
 	printf_P(PSTR("Taking measurements...\n"));
 	
+	GetData(Dataset);
+	
+	TempData = (((uint32_t)Dataset[0]<<16) | ((uint32_t)Dataset[1]<<8) | (uint32_t)Dataset[2]);
+	//printf_P(PSTR("Red: %lu counts\n"), TempData);
+	ThermistorCountsToTemp(TempData, TempOutput);
+	printf_P(PSTR("Red: %s C\n"), TempOutput);
+	
+	TempData = (((uint32_t)Dataset[3]<<16) | ((uint32_t)Dataset[4]<<8) | (uint32_t)Dataset[5]);
+	//printf_P(PSTR("Black: %lu counts\n"), TempData);
+	ThermistorCountsToTemp(TempData, TempOutput);
+	printf_P(PSTR("Black: %s C\n"), TempOutput);
+	
+	TempData = (((uint32_t)Dataset[6]<<16) | ((uint32_t)Dataset[7]<<8) | (uint32_t)Dataset[8]);
+	printf_P(PSTR("Heater Voltage: %lu counts\n"), TempData);
+	
+	TempData = (((uint32_t)Dataset[9]<<16) | ((uint32_t)Dataset[10]<<8) | (uint32_t)Dataset[11]);
+	printf_P(PSTR("Internal Temperature: %lu counts\n"), TempData);
+	
+	TempData = (((uint32_t)Dataset[12]<<16) | ((uint32_t)Dataset[13]<<8) | (uint32_t)Dataset[14]);
+	printf_P(PSTR("Heater Current: %lu counts\n"), TempData);
+	
+	
+	
+	/*
 	//Turn on excitation current to red thermistor
 	SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
 	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
@@ -468,7 +569,7 @@ static int _F11_Handler (void)
 	WaitForAnyKey();
 	printf_P(PSTR("done\n"));
 	//GetNewCommand();
-	//AD7794InternalTempCal(2525);
+	//AD7794InternalTempCal(2525);*/
 	
 	return 0;
 }
@@ -488,6 +589,8 @@ static int _F13_Handler (void)
 	uint8_t arg1 = argAsInt(1);
 	uint8_t arg2;
 	uint8_t arg3;
+	uint32_t TempOutput;
+	//char outputval[9];
 	
 	switch (arg1)
 	{
@@ -508,6 +611,13 @@ static int _F13_Handler (void)
 		case 2:
 			arg3 = AT45DB321D_ReadStatus();
 			printf_P(PSTR("Stat: 0x%02X\n"), AT45DB321D_ReadStatus());
+			break;
+			
+		case 3:
+			TempOutput = AD7794GetInternalTemp();
+			printf_P(PSTR("Output Temp: %d.%lu C\n"), (int16_t)(TempOutput/10000), (uint32_t)(TempOutput-((TempOutput/10000)*10000)) );
+			//ThermistorCountsToTemp(4588640l, outputval);
+			//printf("Tempret: %s deg C\n", outputval);
 			break;
 	
 	}
