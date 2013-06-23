@@ -44,6 +44,8 @@
 		#include <avr/eeprom.h>
 		#include <string.h>
 		#include <stdio.h>
+		#include <math.h>
+		#include <stdlib.h>
 
 		#include "Descriptors.h"
 
@@ -62,6 +64,7 @@
 		#include "at45db321d.h"
 		#include "datalogger.h"
 		#include "ds3232m.h"
+		#include "thermistor.h"
 		
 	/* Macros: */
 		/** LED mask for the library LED driver, to indicate that the USB interface is not ready. */
