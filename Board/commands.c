@@ -279,8 +279,13 @@ static int _F6_Handler (void)
 //tempcal
 static int _F7_Handler (void)
 {
-	char RedOutput[10];
-	char BlackOutput[10];
+	//char RedOutput[10];
+	//char BlackOutput[10];
+	
+	int32_t RedTemp;
+	int32_t BlackTemp;
+	
+	
 	char selection;
 	uint8_t Dataset[16];
 	uint32_t TempData;
@@ -292,13 +297,19 @@ static int _F7_Handler (void)
 	
 	//Process the temperature data
 	TempData = (((uint32_t)Dataset[0]<<16) | ((uint32_t)Dataset[1]<<8) | (uint32_t)Dataset[2]);
-	ThermistorCountsToTemp(TempData, RedOutput);
+	RedTemp = ThermistorCountsToTempNum(TempData);
+	
+	//ThermistorCountsToTemp(TempData, RedOutput);
+	
 	TempData = (((uint32_t)Dataset[3]<<16) | ((uint32_t)Dataset[4]<<8) | (uint32_t)Dataset[5]);
-	ThermistorCountsToTemp(TempData, BlackOutput);
+	BlackTemp = ThermistorCountsToTempNum(TempData);
+	//ThermistorCountsToTemp(TempData, BlackOutput);
 	
 	printf_P(PSTR("Select temperature source\n"));
-	printf_P(PSTR("[1] Red:   %s C\n"), RedOutput);
-	printf_P(PSTR("[2] Black: %s C\n"), BlackOutput);
+	printf_P(PSTR("[1] Red:   %d.%lu C\n"), (int16_t)(RedTemp/10000), (uint32_t)(RedTemp-((RedTemp/10000)*10000)) );
+	printf_P(PSTR("[2] Black: %d.%lu C\n"), (int16_t)(BlackTemp/10000), (uint32_t)(BlackTemp-((BlackTemp/10000)*10000)) );
+	//printf_P(PSTR("[1] Red:   %s C\n"), RedOutput);
+	//printf_P(PSTR("[2] Black: %s C\n"), BlackOutput);
 	printf_P(PSTR("[3] Manual input\n"));
 	
 	selection = WaitForAnyKey()-48;
@@ -306,32 +317,24 @@ static int _F7_Handler (void)
 	if(selection == 1)
 	{
 		printf_P(PSTR("Calibrating using red\n"));
-		TempData = 0;
-		for(i=0; i<10; i++)
-		{
-			if(RedOutput[i] != 32)	//the first non-space character
-			{
-				if(RedOutput[i] == 46)	//decimal
-				{
-					TempData = (TempData*100) + ((RedOutput[i+1]-48)*10) + (RedOutput[i+2]-48);
-					break;
-				}
-				else
-				{
-					TempData = TempData*10 + (RedOutput[i]-48);
-				}
-			}
-		}
-		printf_P(PSTR("Calibration code: %lu\n"), TempData);
-		AD7794InternalTempCal(TempData);
+		AD7794InternalTempCal(RedTemp);
 	}
 	else if(selection == 2)
 	{
 		printf_P(PSTR("Calibrating using black\n"));
+		AD7794InternalTempCal(BlackTemp);
 	}
-	else if(selection == 2)
+	else if(selection == 3)
 	{
-		printf_P(PSTR("Calibrating using custon\n"));
+		printf_P(PSTR("Enter the temperature in degrees C*10000\n"));
+		GetNewCommand();
+		
+		TempData = argAsInt(0);
+		
+		if((TempData < 500000) && (TempData > 0))
+		{
+			AD7794InternalTempCal(TempData);
+		}
 	}
 	else
 	{
@@ -475,101 +478,28 @@ static int _F11_Handler (void)
 	
 	TempData = (((uint32_t)Dataset[0]<<16) | ((uint32_t)Dataset[1]<<8) | (uint32_t)Dataset[2]);
 	//printf_P(PSTR("Red: %lu counts\n"), TempData);
-	ThermistorCountsToTemp(TempData, TempOutput);
-	printf_P(PSTR("Red: %s C\n"), TempOutput);
+	//ThermistorCountsToTemp(TempData, TempOutput);
+	//printf_P(PSTR("Red: %s C\n"), TempOutput);
+	TempData = ThermistorCountsToTempNum(TempData);
+	printf_P(PSTR("Red: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
+	
 	
 	TempData = (((uint32_t)Dataset[3]<<16) | ((uint32_t)Dataset[4]<<8) | (uint32_t)Dataset[5]);
 	//printf_P(PSTR("Black: %lu counts\n"), TempData);
-	ThermistorCountsToTemp(TempData, TempOutput);
-	printf_P(PSTR("Black: %s C\n"), TempOutput);
+	//ThermistorCountsToTemp(TempData, TempOutput);
+	//printf_P(PSTR("Black: %s C\n"), TempOutput);
+	TempData = ThermistorCountsToTempNum(TempData);
+	printf_P(PSTR("Black: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[6]<<16) | ((uint32_t)Dataset[7]<<8) | (uint32_t)Dataset[8]);
 	printf_P(PSTR("Heater Voltage: %lu counts\n"), TempData);
 	
 	TempData = (((uint32_t)Dataset[9]<<16) | ((uint32_t)Dataset[10]<<8) | (uint32_t)Dataset[11]);
-	printf_P(PSTR("Internal Temperature: %lu counts\n"), TempData);
+	printf_P(PSTR("Internal Temperature: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
+	//printf_P(PSTR("Internal Temperature: %lu counts\n"), TempData);
 	
 	TempData = (((uint32_t)Dataset[12]<<16) | ((uint32_t)Dataset[13]<<8) | (uint32_t)Dataset[14]);
 	printf_P(PSTR("Heater Current: %lu counts\n"), TempData);
-	
-	
-	
-	/*
-	//Turn on excitation current to red thermistor
-	SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
-
-	//Set up channel 2 (red thermistor)
-	//	-Unipolar
-	//	-Gain of 2
-	//	-Internal 1.17V reference
-	//	-Buffered
-	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
-	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN2);
-	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	SendData[1] = AD7794_MRH_MODE_SINGLE;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	printf_P(PSTR("Red: %lu counts\n"), AD7794GetData() );
-	
-	//Turn on excitation current to black thermistor
-	SendData[0] = (AD7794_IO_DIR_IOUT2 | AD7794_IO_10UA);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
-	
-	//Set up channel 3 (black thermistor)
-	//	-Unipolar
-	//	-Gain of 2
-	//	-Internal 1.17V reference
-	//	-Buffered
-	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
-	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN3);
-	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	SendData[1] = AD7794_MRH_MODE_SINGLE;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	printf_P(PSTR("Black: %lu counts\n"), AD7794GetData() );
-
-	//Turn off excitation currents
-	SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_OFF);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
-	
-	//Measure input voltage
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
-	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN6);
-	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	SendData[1] = AD7794_MRH_MODE_SINGLE;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	printf_P(PSTR("Heater Voltage: %lu counts\n"), AD7794GetData() );
-	
-	//Measure internal temperature
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
-	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
-	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	SendData[1] = AD7794_MRH_MODE_SINGLE;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	printf_P(PSTR("Internal Temperature: %lu counts\n"), AD7794GetData() );
-	
-	//Measure heater current
-	SendData[1] = (AD7794_CRH_BIAS_AIN1|AD7794_CRH_BOOST|AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
-	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
-	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	SendData[1] = AD7794_MRH_MODE_SINGLE;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	printf_P(PSTR("Heater Current: %lu counts\n"), AD7794GetData() );
-	
-	printf_P(PSTR("waiting for key\n"));
-	WaitForAnyKey();
-	printf_P(PSTR("done\n"));
-	//GetNewCommand();
-	//AD7794InternalTempCal(2525);*/
 	
 	return 0;
 }
@@ -614,8 +544,8 @@ static int _F13_Handler (void)
 			break;
 			
 		case 3:
-			TempOutput = AD7794GetInternalTemp();
-			printf_P(PSTR("Output Temp: %d.%lu C\n"), (int16_t)(TempOutput/10000), (uint32_t)(TempOutput-((TempOutput/10000)*10000)) );
+			//TempOutput = AD7794GetInternalTemp();
+			//printf_P(PSTR("Output Temp: %d.%lu C\n"), (int16_t)(TempOutput/10000), (uint32_t)(TempOutput-((TempOutput/10000)*10000)) );
 			//ThermistorCountsToTemp(4588640l, outputval);
 			//printf("Tempret: %s deg C\n", outputval);
 			break;

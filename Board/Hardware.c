@@ -247,6 +247,8 @@ void Relay(uint8_t RelayState)
 
 //Get a full set of data from the A/D converter
 //This function will be used by the datalogger to get data to save
+//TODO: Process the thermistor data into deg C in this function instead of other places
+//TODO: Change decimal storage format to two 16-bit numbers, one containing the LHS and sign, the other containing the RHS.
 void GetData(uint8_t *TheData)
 {
 	uint8_t SendData[3];
@@ -323,19 +325,8 @@ void GetData(uint8_t *TheData)
 	
 	//printf_P(PSTR("Heater Voltage: %lu counts or %d %d %d\n"), TempData, TheData[6], TheData[7], TheData[8]);
 	
-	//Set up internal temperature
-	//	-Unipolar
-	//	-Gain of 1
-	//	-Internal 1.17V reference
-	//	-Buffered
-	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
-	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
-	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	SendData[1] = AD7794_MRH_MODE_SINGLE;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	TempData = AD7794GetData();
+	//Get internal temperature
+	TempData = AD7794GetInternalTemp();
 	TheData[9] = ((TempData>>16) & 0xFF);
 	TheData[10] = ((TempData>>8) & 0xFF);
 	TheData[11] = (TempData & 0xFF);

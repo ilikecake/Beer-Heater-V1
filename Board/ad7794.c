@@ -223,7 +223,7 @@ uint8_t AD7794InternalTempCal(uint32_t CurrentTemp)
 	char OutputString[15];
 	
 	slope = 0.0001721912F;		//Deg C/count
-	TempInput = (double)CurrentTemp/100.0F;
+	TempInput = (double)CurrentTemp/10000.0F;
 	
 	cal = eeprom_read_float(&NV_AD7794_INTERNAL_TEMP_CAL);
 	dtostrf(cal, 9, 4, OutputString);
@@ -275,7 +275,11 @@ int32_t AD7794GetInternalTemp(void)
 	slope = 0.0001721912F;		//Deg C/count
 	intercept = eeprom_read_float(&NV_AD7794_INTERNAL_TEMP_CAL);
 	
-	//Measure internal temperature
+	//Set up internal temperature
+	//	-Unipolar
+	//	-Gain of 1
+	//	-Internal 1.17V reference
+	//	-Buffered
 	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_TEMP);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
