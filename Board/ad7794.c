@@ -206,7 +206,7 @@ uint32_t AD7794GetData( void )
 
 /**Calibrates the internal temperature sensor. This function assumes that the internal temperature sensor will be read in unipolar mode with the internal 1.17V reference.
 *
-*	CurrentTemp The current temperature of the device. This value should be entered as 100 times the temperature in C. EX: 25.48C would be 2548.
+*	CurrentTemp The current temperature of the device. This value should be entered as 10000 times the temperature in C. EX: 25.4812C would be 254812.
 *	
 *	Note: NV_AD7794_INTERNAL_TEMP_CAL is the zero intercept of the temperature calibration. The slope is given in the datasheet.
 */
