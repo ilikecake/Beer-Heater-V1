@@ -279,18 +279,11 @@ static int _F6_Handler (void)
 //tempcal
 static int _F7_Handler (void)
 {
-	//char RedOutput[10];
-	//char BlackOutput[10];
-	
 	int32_t RedTemp;
 	int32_t BlackTemp;
-	
-	
 	char selection;
 	uint8_t Dataset[16];
 	uint32_t TempData;
-	uint8_t i;
-	uint8_t j;
 	
 	printf_P(PSTR("Taking measurements...\n"));
 	GetData(Dataset);
@@ -468,7 +461,6 @@ static int _F10_Handler (void)
 //Get temperatures from the ADC
 static int _F11_Handler (void)
 {
-	char TempOutput[9];
 	uint8_t Dataset[16];
 	uint32_t TempData;
 	
@@ -477,26 +469,19 @@ static int _F11_Handler (void)
 	GetData(Dataset);
 	
 	TempData = (((uint32_t)Dataset[0]<<16) | ((uint32_t)Dataset[1]<<8) | (uint32_t)Dataset[2]);
-	//printf_P(PSTR("Red: %lu counts\n"), TempData);
-	//ThermistorCountsToTemp(TempData, TempOutput);
-	//printf_P(PSTR("Red: %s C\n"), TempOutput);
 	TempData = ThermistorCountsToTempNum(TempData);
 	printf_P(PSTR("Red: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
-	
 	TempData = (((uint32_t)Dataset[3]<<16) | ((uint32_t)Dataset[4]<<8) | (uint32_t)Dataset[5]);
-	//printf_P(PSTR("Black: %lu counts\n"), TempData);
-	//ThermistorCountsToTemp(TempData, TempOutput);
-	//printf_P(PSTR("Black: %s C\n"), TempOutput);
 	TempData = ThermistorCountsToTempNum(TempData);
 	printf_P(PSTR("Black: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[6]<<16) | ((uint32_t)Dataset[7]<<8) | (uint32_t)Dataset[8]);
-	printf_P(PSTR("Heater Voltage: %lu counts\n"), TempData);
+	TempData = ConvertHeaterVoltage(TempData);
+	printf_P(PSTR("Heater Voltage: %d.%lu V\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[9]<<16) | ((uint32_t)Dataset[10]<<8) | (uint32_t)Dataset[11]);
 	printf_P(PSTR("Internal Temperature: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
-	//printf_P(PSTR("Internal Temperature: %lu counts\n"), TempData);
 	
 	TempData = (((uint32_t)Dataset[12]<<16) | ((uint32_t)Dataset[13]<<8) | (uint32_t)Dataset[14]);
 	printf_P(PSTR("Heater Current: %lu counts\n"), TempData);
@@ -519,8 +504,6 @@ static int _F13_Handler (void)
 	uint8_t arg1 = argAsInt(1);
 	uint8_t arg2;
 	uint8_t arg3;
-	uint32_t TempOutput;
-	//char outputval[9];
 	
 	switch (arg1)
 	{
@@ -544,10 +527,6 @@ static int _F13_Handler (void)
 			break;
 			
 		case 3:
-			//TempOutput = AD7794GetInternalTemp();
-			//printf_P(PSTR("Output Temp: %d.%lu C\n"), (int16_t)(TempOutput/10000), (uint32_t)(TempOutput-((TempOutput/10000)*10000)) );
-			//ThermistorCountsToTemp(4588640l, outputval);
-			//printf("Tempret: %s deg C\n", outputval);
 			break;
 	
 	}

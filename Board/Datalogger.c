@@ -406,7 +406,7 @@ void Datalogger_Process(void)
 
 	if(DataLoggerStarted == 1)
 	{
-		GetTime(&CurrentTime);
+		DS3232M_GetTime(&CurrentTime);
 		
 		//check to see if it is time to get another set of data to average.
 		if(CurrentTime.min == MinToWaitFor)
@@ -464,7 +464,7 @@ void Datalogger_AddDataSetToAverage(void)
 {
 	uint8_t TempDataSet[DATALOGGER_DATASET_SIZE];
 	uint8_t i;
-	uint32_t TempAverage;
+	//uint32_t TempAverage;
 	
 	uint16_t TempData;
 	int32_t delta;
