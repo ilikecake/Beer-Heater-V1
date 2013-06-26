@@ -39,6 +39,7 @@ void DelayMS(uint16_t ms);
 void DelaySEC(uint16_t SEC);
 
 void GetData(uint8_t *TheData);
+uint32_t ConvertHeaterVoltage(uint32_t InputCounts);
 
 /*
 void StartTimer(void);

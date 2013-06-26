@@ -338,7 +338,7 @@ void GetData(uint8_t *TheData)
 	//	-Gain of 1
 	//	-Internal 1.17V reference
 	//	-Buffered
-	SendData[1] = (AD7794_CRH_BIAS_AIN1|AD7794_CRH_BOOST|AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
@@ -353,6 +353,17 @@ void GetData(uint8_t *TheData)
 	//printf_P(PSTR("Heater Current: %lu counts or %d %d %d\n"), TempData, TheData[12], TheData[13], TheData[14]);
 
 	return;
+}
+
+//Converts the measured heater voltage to the real voltage in volts/10000
+//Uses the measured values of resistors as R1=10K, R2=279.2K
+//TODO: Make these resistances compiler defines?
+//TODO: These functions should probably be combined somewhere
+uint32_t ConvertHeaterVoltage(uint32_t InputCounts)
+{
+	double HeaterVoltage;
+	HeaterVoltage = ((double)InputCounts*1.17F*289.2F)/((double)(0xFFFFFF * 10));
+	return (uint32_t)(HeaterVoltage*10000);
 }
 
 
