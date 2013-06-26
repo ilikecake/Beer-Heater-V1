@@ -63,6 +63,38 @@ void ThermistorCountsToTemp (uint32_t Counts, char *outputval)
 	return;
 }
 
+int32_t ThermistorCountsToTempNum (uint32_t Counts)
+{
+	double A;
+	double B;
+	double C;
+	
+	double Temp;
+	double R;
+	
+	uint8_t i;
+	//char outputval[10];
+
+	//Steinhart-Hart Coefficients for the thermistor
+	//TODO: put these in progmem?
+	//TODO: allow for multiple coefficients?
+	A = 0.001126107;
+	B = 0.000235532;
+	C = 8.94216394359268E-008;
+	
+	//Note: The number here is calculated as (Vref/(2^bits*Gain*Current(amps)))
+	//Ex: 1.17/(2^24*2*0.00002) = 0.0017434359
+	//TODO: can this be done with compiler directives?
+	R = (double)Counts*0.0017434359F;
+	
+	Temp = A + B*log(R) + C*pow(log(R),3);
+	
+	//Convert Kelvin to Celcius
+	Temp = (1/Temp) - 272.15F;
+	//dtostrf(Temp, 9, 4, outputval);
+	
+	return ((int32_t)(Temp*10000.0F));
+}
 
 
 

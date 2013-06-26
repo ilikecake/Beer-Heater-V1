@@ -27,7 +27,7 @@
 
 void ThermistorCountsToTemp (uint32_t Counts, char *outputval);
 
-
+int32_t ThermistorCountsToTempNum (uint32_t Counts);
 
 
 
