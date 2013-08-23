@@ -359,10 +359,14 @@ static int _F9_Handler (void)
 }
 
 //Manual calibration of the ADC
+//TODO: Take some of the often used strings and set them as globals to save code space.
 static int _F10_Handler (void)
 {
 	uint8_t SendData[3];
+	uint8_t selection;
+	uint32_t TempData;
 	
+	printf_P(PSTR("Performing A/D internal calibraion\n"));
 	//Calibrate channel 1
 	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
@@ -454,7 +458,24 @@ static int _F10_Handler (void)
 
 	AD7794WaitReady();
 	printf_P(PSTR("Done!\n"));
-
+	
+	printf_P(PSTR("Get current sensor zero value? [y/n]\n"));
+	selection = WaitForAnyKey();
+	
+	if((selection == 'Y') || (selection == 'y'))
+	{
+		printf_P(PSTR("Taking zero reading from current sensor...."));
+		
+		CalibrateHeaterCurrent();
+		
+		
+		
+		
+		printf_P(PSTR("Done!\n"));
+	}
+	
+	
+	
 	return 0;
 }
 
@@ -463,6 +484,7 @@ static int _F11_Handler (void)
 {
 	uint8_t Dataset[16];
 	uint32_t TempData;
+	int32_t signedTempData;
 	
 	printf_P(PSTR("Taking measurements...\n"));
 	
@@ -470,21 +492,25 @@ static int _F11_Handler (void)
 	
 	TempData = (((uint32_t)Dataset[0]<<16) | ((uint32_t)Dataset[1]<<8) | (uint32_t)Dataset[2]);
 	TempData = ThermistorCountsToTempNum(TempData);
-	printf_P(PSTR("Red: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
+	printf_P(PSTR("Red: %d.%04lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[3]<<16) | ((uint32_t)Dataset[4]<<8) | (uint32_t)Dataset[5]);
 	TempData = ThermistorCountsToTempNum(TempData);
-	printf_P(PSTR("Black: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
+	printf_P(PSTR("Black: %d.%04lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[6]<<16) | ((uint32_t)Dataset[7]<<8) | (uint32_t)Dataset[8]);
 	TempData = ConvertHeaterVoltage(TempData);
-	printf_P(PSTR("Heater Voltage: %d.%lu V\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
+	printf_P(PSTR("Heater Voltage: %d.%04lu V\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[9]<<16) | ((uint32_t)Dataset[10]<<8) | (uint32_t)Dataset[11]);
-	printf_P(PSTR("Internal Temperature: %d.%lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
+	printf_P(PSTR("Internal Temperature: %d.%04lu C\n"), (int16_t)(TempData/10000), (uint32_t)(TempData-((TempData/10000)*10000)) );
 	
 	TempData = (((uint32_t)Dataset[12]<<16) | ((uint32_t)Dataset[13]<<8) | (uint32_t)Dataset[14]);
-	printf_P(PSTR("Heater Current: %lu counts\n"), TempData);
+	signedTempData = ConvertHeaterCurrent(TempData);
+	//printf_P(PSTR("Heater Current: %ld\n"), signedTempData);
+	//printf_P(PSTR("int1: %ld\n"), (signedTempData-((signedTempData/10000)*10000)));
+	//printf_P(PSTR("int1: %lu\n"), labs((signedTempData-((signedTempData/10000)*10000))));
+	printf_P(PSTR("Heater Current: %d.%04lu A\n"), (int16_t)(signedTempData/10000), labs(signedTempData-((signedTempData/10000)*10000)) );
 	
 	return 0;
 }
@@ -527,6 +553,7 @@ static int _F13_Handler (void)
 			break;
 			
 		case 3:
+			MAX7315Init();
 			break;
 	
 	}

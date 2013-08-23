@@ -27,7 +27,7 @@
 
 void MAX7315Init( void )
 {
-	MAX7315WriteReg(MAX7315_REG_PORT_CONFIG, 0x7C);		//Ports 0, 1, and 7 are outputs
+	MAX7315WriteReg(MAX7315_REG_PORT_CONFIG, 0xF8);		//Ports 0, 1, and 2 are outputs
 	MAX7315WriteReg(MAX7315_REG_CONFIG, 0x08);			//Blink disabled, global intensity control disabled, INT is enabled
 	MAX7315WriteReg(MAX7315_REG_BLINK0, 0xFF);
 	

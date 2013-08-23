@@ -128,18 +128,18 @@ void HardwareInit( void )
 
 void LED(uint8_t LEDValue, uint8_t LEDState)
 {
-	if(LEDValue == 1)
+	if(LEDValue == 2)
 	{
 		if(LEDState == 1)
 		{
-			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x00, 0x80);
+			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x00, 0x04);
 		}
 		else
 		{
-			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x80, 0x80);
+			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x04, 0x04);
 		}
 	}
-	else if(LEDValue == 2)
+	else if(LEDValue == 3)
 	{
 		if(LEDState == 1)
 		{
@@ -150,12 +150,13 @@ void LED(uint8_t LEDValue, uint8_t LEDState)
 			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x01, 0x01);
 		}
 	}
-	else if(LEDValue == 3)
+	else if(LEDValue == 1)
 	{
 		if(LEDState == 1)
 		{
 			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x00, 0x02);
 		}
+		
 		else
 		{
 			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x02, 0x02);
@@ -243,59 +244,93 @@ void Relay(uint8_t RelayState)
 	return;
 }
 
+/** Determine the zero point for the current sensor and save it into EEPROM. The zero point of the current sensor is measured by shutting down the relay and measuring the reading from the sensor. */
+void CalibrateHeaterCurrent(void)
+{
+	uint32_t CalValue;
+	uint8_t CalString[3];
+	
+	//eeprom_read_block((void*)&CalString, (const void*)&NV_CURRENT_ZERO_CAL, 3);
+	//CalValue = CalString[2] + CalString[1]*256 + CalString[0]*65536;
+	
+	//printf_P(PSTR("Old Calibration 0x%06lX\n"), CalValue);
+	//printf_P(PSTR("Old Calibration 0x%02X 0x%02X 0x%02X\n"), CalString[0], CalString[1], CalString[2]);
+	//Turn of the relay
+	//TODO: try to save the current state of the relay first?
+	Relay(0);
 
+	CalValue = GetHeaterCurrent();
+	CalValue += GetHeaterCurrent();
+	CalValue += GetHeaterCurrent();
+	CalValue += GetHeaterCurrent();
+	CalValue += GetHeaterCurrent();
+	CalValue = CalValue / 5;
+	
+	//printf_P(PSTR("New Calibration 0x%06lX\n"), CalValue);
+	
+	CalString[0] = ((CalValue>>16) & 0xFF);
+	CalString[1] = ((CalValue>>8) & 0xFF);
+	CalString[2] = (CalValue & 0xFF);
+	
+	//printf_P(PSTR("New Calibration 0x%02X 0x%02X 0x%02X\n"), CalString[0], CalString[1], CalString[2]);
+	
+	eeprom_update_block ((const void*)CalString, (void*)NV_CURRENT_ZERO_CAL, 3);
+
+	return;
+}
 
 //Get a full set of data from the A/D converter
 //This function will be used by the datalogger to get data to save
 //TODO: Process the thermistor data into deg C in this function instead of other places
 //TODO: Change decimal storage format to two 16-bit numbers, one containing the LHS and sign, the other containing the RHS.
+//TODO: Add calibraion for the current sensor where it shuts off the relay and measures current
 void GetData(uint8_t *TheData)
 {
-	uint8_t SendData[3];
+	//uint8_t SendData[3];
 	uint32_t TempData;
 	//uint8_t DataLocation;
 	
 	//DataLocation = 0;
 	
 	//Turn on excitation current to red thermistor
-	SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	//SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
+	//AD7794WriteReg(AD7794_CR_REG_IO, SendData);
 
 	//Set up channel 2 (red thermistor)
 	//	-Unipolar
 	//	-Gain of 2
 	//	-Internal 1.17V reference
 	//	-Buffered
-	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
+	/*SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN2);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
 	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
 	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	TempData = AD7794GetData();
+	AD7794WaitReady();*/
+	TempData = GetRedTemp();
 	TheData[0] = ((TempData>>16) & 0xFF);
 	TheData[1] = ((TempData>>8) & 0xFF);
 	TheData[2] = (TempData & 0xFF);
 	//printf_P(PSTR("Red: %lu counts or %d %d %d\n"), TempData, TheData[0], TheData[1], TheData[2]);
 	
 	//Turn on excitation current to black thermistor
-	SendData[0] = (AD7794_IO_DIR_IOUT2 | AD7794_IO_10UA);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	//SendData[0] = (AD7794_IO_DIR_IOUT2 | AD7794_IO_10UA);
+	//AD7794WriteReg(AD7794_CR_REG_IO, SendData);
 	
 	//Set up channel 3 (black thermistor)
 	//	-Unipolar
 	//	-Gain of 2
 	//	-Internal 1.17V reference
 	//	-Buffered
-	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
+	/*SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN3);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
 	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
 	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	TempData = AD7794GetData();
+	AD7794WaitReady();*/
+	TempData = GetBlackTemp();
 	TheData[3] = ((TempData>>16) & 0xFF);
 	TheData[4] = ((TempData>>8) & 0xFF);
 	TheData[5] = (TempData & 0xFF);
@@ -303,22 +338,22 @@ void GetData(uint8_t *TheData)
 	//printf_P(PSTR("Black: %lu counts or %d %d %d\n"), TempData, TheData[3], TheData[4], TheData[5]);
 
 	//Turn off excitation currents
-	SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_OFF);
-	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	//SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_OFF);
+	//AD7794WriteReg(AD7794_CR_REG_IO, SendData);
 	
 	//Set up channel 6 (heater voltage)
 	//	-Unipolar
 	//	-Gain of 1
 	//	-Internal 1.17V reference
 	//	-Buffered
-	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
+	/*SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN6);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
 	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
 	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	TempData = AD7794GetData();
+	AD7794WaitReady();*/
+	TempData = GetHeaterVoltage();
 	TheData[6] = ((TempData>>16) & 0xFF);
 	TheData[7] = ((TempData>>8) & 0xFF);
 	TheData[8] = (TempData & 0xFF);
@@ -338,14 +373,14 @@ void GetData(uint8_t *TheData)
 	//	-Gain of 1
 	//	-Internal 1.17V reference
 	//	-Buffered
-	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
+	/*SendData[1] = (AD7794_CRH_BIAS_AIN1|AD7794_CRH_BIPOLAR|AD7794_CRH_BOOST|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
 	SendData[1] = AD7794_MRH_MODE_SINGLE;
 	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
 	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	AD7794WaitReady();
-	TempData = AD7794GetData();
+	AD7794WaitReady();*/
+	TempData = GetHeaterCurrent();
 	TheData[12] = ((TempData>>16) & 0xFF);
 	TheData[13] = ((TempData>>8) & 0xFF);
 	TheData[14] = (TempData & 0xFF);
@@ -354,6 +389,132 @@ void GetData(uint8_t *TheData)
 
 	return;
 }
+
+/** Get the heater current from channel 1 of the AD7794. Heater current is measured by an ACS711 current sensor on the low side of the DC plug.
+*
+*	Channel 1 setup:
+*		-Bipolar
+*		-AIN1- biased to VCC/2
+*		-Bias boost on
+*		-Gain of 1
+*		-Internal 1.17V reference
+*		-Buffered	
+*/
+uint32_t GetHeaterCurrent(void)
+{
+	uint8_t SendData[3];
+	uint32_t TempData;
+	
+	SendData[1] = (AD7794_CRH_BIAS_AIN1|AD7794_CRH_BIPOLAR|AD7794_CRH_BOOST|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN1);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	return TempData;
+}
+
+/** Get the heater voltage from channel 6 of the AD7794. Heater current is measured through a voltage divider on the DC input line.
+*	Resistors for the divider are 280K/10K. This gives a maximum measurement range of ~34V.
+*
+*	Channel 6 setup:
+*		-Unipolar
+*		-Gain of 1
+*		-Internal 1.17V reference
+*		-Buffered
+*/
+uint32_t GetHeaterVoltage(void)
+{
+	uint8_t SendData[3];
+	uint32_t TempData;
+
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_1);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN6);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	return TempData;
+}
+
+/** Get the thermistor reading from the red plug attached to channel 2. The thermistor is excited by a 10nA current.
+*
+*	Channel 2 setup:
+*		-Unipolar
+*		-Gain of 2
+*		-Internal 1.17V reference
+*		-Buffered
+*/
+uint32_t GetRedTemp(void)
+{
+	uint8_t SendData[3];
+	uint32_t TempData;
+
+	//Turn on excitation current to red thermistor
+	SendData[0] = (AD7794_IO_DIR_IOUT1 | AD7794_IO_10UA);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN2);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	
+	//Turn off excitation currents
+	SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_OFF);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	
+	return TempData;
+}
+
+/** Get the thermistor reading from the black plug attached to channel 3. The thermistor is excited by a 10nA current.
+*
+*	Channel 3 setup:
+*		-Unipolar
+*		-Gain of 2
+*		-Internal 1.17V reference
+*		-Buffered
+*/
+uint32_t GetBlackTemp(void)
+{
+	uint8_t SendData[3];
+	uint32_t TempData;
+	
+	//Turn on excitation current to black thermistor
+	SendData[0] = (AD7794_IO_DIR_IOUT2 | AD7794_IO_10UA);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	
+	SendData[1] = (AD7794_CRH_UNIPOLAR|AD7794_CRH_GAIN_2);
+	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN3);
+	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
+	SendData[1] = AD7794_MRH_MODE_SINGLE;
+	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ);
+	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
+	AD7794WaitReady();
+	TempData = AD7794GetData();
+	
+	//Turn off excitation currents
+	SendData[0] = (AD7794_IO_DIR_NORMAL | AD7794_IO_OFF);
+	AD7794WriteReg(AD7794_CR_REG_IO, SendData);
+	
+	return TempData;
+}
+
+
+
+
+
+
+
+
+
 
 //Converts the measured heater voltage to the real voltage in volts/10000
 //Uses the measured values of resistors as R1=10K, R2=279.2K
@@ -366,6 +527,45 @@ uint32_t ConvertHeaterVoltage(uint32_t InputCounts)
 	return (uint32_t)(HeaterVoltage*10000);
 }
 
+//This measurment is assumed to be taken in bipolar mode
+int32_t ConvertHeaterCurrent(uint32_t InputCounts)
+{
+	int32_t CountsFromZero;
+	double HeaterCurrent;
+	uint32_t CalValue;
+	uint8_t CalString[3];
+	
+	//Get the calibraion data
+	eeprom_read_block((void*)&CalString, (const void*)&NV_CURRENT_ZERO_CAL, 3);
+	if((CalString[2] == 0xFF) && (CalString[2] == 0xFF) && (CalString[2] == 0xFF))
+	{
+		//If no calibraion exsists
+		//TODO: Add a warning here?
+		CalValue = 8388608;
+	}
+	else
+	{
+		CalValue = CalString[2] + CalString[1]*256 + CalString[0]*65536;
+	}
+	//printf_P(PSTR("Cal: 0x%06lX\n"), CalValue);
+	//printf_P(PSTR("Counts: 0x%06lX\n"), InputCounts);
+	
+	if(InputCounts > CalValue)
+	{
+		CountsFromZero = (int32_t)(InputCounts-CalValue);
+		
+	}
+	else
+	{
+		CountsFromZero = -1*((int32_t)(CalValue-InputCounts));
+	}
+	//CountsFromZero = -4000;
+	//printf_P(PSTR("Counts fz: 0x%06lX\n"), CountsFromZero);
+	//printf_P(PSTR("Counts fz: %ld\n"), CountsFromZero);
+	HeaterCurrent = ((double)CountsFromZero*1170.0F)/((double)(0xFFFFFF));
+	HeaterCurrent = HeaterCurrent / (double)(220);
+	return (int32_t)(HeaterCurrent*10000);
+}
 
 //Timer interrupt 0 for basic timing stuff
 ISR(TIMER0_COMPA_vect)
@@ -404,14 +604,21 @@ ISR(TIMER3_COMPA_vect)
 ISR(INT2_vect)
 {
 	MAX7315ReadReg(MAX7315_REG_INPUTS, &ButtonState);
+	//printf_P(PSTR("bs: 0x%02X\n"), ButtonState);
 	
-	if(((ButtonState & (1<<2)) == 0x00) && ((OldButtonState & (1<<2)) == (1<<2)))
+	if(((ButtonState & (1<<4)) == 0x00) && ((OldButtonState & (1<<4)) == (1<<4)))
 	{
-		printf_P(PSTR("b1\n"));
+		//printf_P(PSTR("b1\n"));
+		LED(1,1);
+		LED(2,1);
+		LED(3,1);
 	}
-	else if(((ButtonState&(1<<3)) == 0x00) && ((OldButtonState & (1<<3)) == (1<<3)))
+	else if(((ButtonState&(1<<5)) == 0x00) && ((OldButtonState & (1<<5)) == (1<<5)))
 	{
-		printf_P(PSTR("b2\n"));
+		//printf_P(PSTR("b2\n"));
+		LED(1,0);
+		LED(2,0);
+		LED(3,0);
 	}
 
 

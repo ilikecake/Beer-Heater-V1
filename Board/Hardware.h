@@ -38,8 +38,21 @@ void HardwareInit( void );
 void DelayMS(uint16_t ms);
 void DelaySEC(uint16_t SEC);
 
+//TODO: Make all of the get data function seperate here
 void GetData(uint8_t *TheData);
+
+//Device level calibration functions
+void CalibrateHeaterCurrent(void);
+
+//Functions to get measurments from the ADC
+uint32_t GetHeaterCurrent(void);
+uint32_t GetHeaterVoltage(void);
+uint32_t GetRedTemp(void);
+uint32_t GetBlackTemp(void);
+
+//Functions to convert meaurements into human readable output
 uint32_t ConvertHeaterVoltage(uint32_t InputCounts);
+int32_t ConvertHeaterCurrent(uint32_t InputCounts);
 
 /*
 void StartTimer(void);

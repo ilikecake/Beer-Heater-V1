@@ -49,7 +49,7 @@
 //Config for the TWI module
 #define	TWI_USER_CONFIG							//Define this in your user code to allow use of the TWI module
 #undef	TWI_USE_ISR								//Define this to enable interrupt driven TWI interface (this code does not work).
-#define	_TWI_DEBUG								//Define this to enable the output of debug messages.
+//#define	_TWI_DEBUG								//Define this to enable the output of debug messages.
 #undef	TWI_USE_INTERNAL_PULLUPS				//Define this to use the internal pull-up resistors of the device.
 #define	TWI_SCL_FREQ_HZ				100000		//Set the SCL frequency
 
