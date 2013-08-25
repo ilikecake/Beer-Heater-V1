@@ -139,11 +139,17 @@ static int _F1_Handler (void)
 	{
 		if(argAsInt(1) == 1)
 		{
-			MAX7315WriteReg(MAX7315_REG_BLINK0, 0x00);
+			LED(1,1);
+			LED(2,1);
+			LED(3,1);
+			//MAX7315WriteReg(MAX7315_REG_BLINK0, 0x00);
 		}
 		else
 		{
-			MAX7315WriteReg(MAX7315_REG_BLINK0, 0xFF);
+			LED(1,0);
+			LED(2,0);
+			LED(3,0);
+			//MAX7315WriteReg(MAX7315_REG_BLINK0, 0xFF);
 		}
 	}
 	else if(argAsInt(1) == 4)	//Read a register from the expander.
@@ -364,7 +370,7 @@ static int _F10_Handler (void)
 {
 	uint8_t SendData[3];
 	uint8_t selection;
-	uint32_t TempData;
+	//uint32_t TempData;
 	
 	printf_P(PSTR("Performing A/D internal calibraion\n"));
 	//Calibrate channel 1
@@ -553,7 +559,9 @@ static int _F13_Handler (void)
 			break;
 			
 		case 3:
-			MAX7315Init();
+			printf_P(PSTR("HW Status: 0x%02X\n"), BH_GetStatus(BH_STATUS_HW));
+			printf_P(PSTR("HIO Status: 0x%02X\n"), BH_GetStatus(BH_STATUS_HIO));
+			printf_P(PSTR("Prog Status: 0x%02X\n"), BH_GetStatus(BH_STATUS_PROG));
 			break;
 	
 	}

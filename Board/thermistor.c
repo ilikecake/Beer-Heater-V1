@@ -39,7 +39,7 @@ void ThermistorCountsToTemp (uint32_t Counts, char *outputval)
 	double Temp;
 	double R;
 	
-	uint8_t i;
+	//uint8_t i;
 	//char outputval[10];
 
 	//Steinhart-Hart Coefficients for the thermistor
@@ -72,7 +72,7 @@ int32_t ThermistorCountsToTempNum (uint32_t Counts)
 	double Temp;
 	double R;
 	
-	uint8_t i;
+	//uint8_t i;
 	//char outputval[10];
 
 	//Steinhart-Hart Coefficients for the thermistor

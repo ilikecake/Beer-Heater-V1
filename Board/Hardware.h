@@ -35,6 +35,8 @@
 /** initalizes the hardware used for the beer heater */
 void HardwareInit( void );
 
+void HandleButtonPress( void );
+
 void DelayMS(uint16_t ms);
 void DelaySEC(uint16_t SEC);
 

@@ -45,7 +45,7 @@
 
 
 //
-void MAX7315Init(void);
+uint8_t MAX7315Init(void);
 uint8_t MAX7315ReadReg(uint8_t RegToRead, uint8_t *RegData);
 uint8_t MAX7315WriteReg(uint8_t RegToWrite, uint8_t RegData);
 uint8_t MAX7315ModifyReg(uint8_t RegToWrite, uint8_t BitData, uint8_t BitMask);

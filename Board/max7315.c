@@ -25,14 +25,31 @@
 
 #include "main.h"
 
-void MAX7315Init( void )
+//Returns an I2C status code, 0 if everything worked.
+uint8_t MAX7315Init( void )
 {
-	MAX7315WriteReg(MAX7315_REG_PORT_CONFIG, 0xF8);		//Ports 0, 1, and 2 are outputs
-	MAX7315WriteReg(MAX7315_REG_CONFIG, 0x08);			//Blink disabled, global intensity control disabled, INT is enabled
-	MAX7315WriteReg(MAX7315_REG_BLINK0, 0xFF);
+	uint8_t stat;
 	
-	MAX7315ReadReg(MAX7315_REG_INPUTS, NULL);			//This is needed to enable the interrupt
-	return;
+	stat = MAX7315WriteReg(MAX7315_REG_PORT_CONFIG, 0xF8);		//Ports 0, 1, and 2 are outputs
+	if(stat > 0)
+	{
+		return stat;
+	}
+	
+	stat = MAX7315WriteReg(MAX7315_REG_CONFIG, 0x08);			//Blink disabled, global intensity control disabled, INT is enabled
+	if(stat > 0)
+	{
+		return stat;
+	}
+	
+	stat = MAX7315WriteReg(MAX7315_REG_BLINK0, 0xFF);
+	if(stat > 0)
+	{
+		return stat;
+	}
+	
+	stat = MAX7315ReadReg(MAX7315_REG_INPUTS, NULL);			//This is needed to enable the interrupt
+	return stat;
 }
 
 //Returns 0 if everything worked
@@ -41,13 +58,7 @@ uint8_t MAX7315ReadReg(uint8_t RegToRead, uint8_t *RegData)
 	uint8_t stat;
 	if(MAX7315IsReg(RegToRead) == 1)
 	{
-		//Switch to TWI
-		//InitTWI();
-		
 		stat = TWIRW(MAX7315_SLA_7B, &RegToRead, RegData, 1, 1);
-		
-		//Switch to SPI
-		//DeinitTWI();
 		
 		if(stat > 0)
 		{
@@ -67,15 +78,7 @@ uint8_t MAX7315WriteReg(uint8_t RegToWrite, uint8_t RegData)
 		WriteReg[0] = RegToWrite;
 		WriteReg[1] = RegData;
 		
-		//Switch to TWI
-		//SPI_Disable();
-		//InitTWI();
-		
 		stat = TWIRW(MAX7315_SLA_7B, WriteReg, &RegData, 2, 0);
-		
-		//Switch to SPI
-		//DeinitTWI();
-		//SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
 		
 		if(stat > 0)
 		{
@@ -98,10 +101,6 @@ uint8_t MAX7315ModifyReg(uint8_t RegToWrite, uint8_t BitData, uint8_t BitMask)
 		return 0xFF;
 	}
 
-	//Switch to TWI
-	//SPI_Disable();
-	//InitTWI();
-
 	//Read the register
 	WriteReg[0] = RegToWrite;
 	stat = TWIRW(MAX7315_SLA_7B, WriteReg, &ReadReg, 1, 1);
@@ -113,10 +112,6 @@ uint8_t MAX7315ModifyReg(uint8_t RegToWrite, uint8_t BitData, uint8_t BitMask)
 	//Modify the register data and write back to the device
 	WriteReg[1] = (ReadReg & (~BitMask)) | BitData;
 	stat = TWIRW(MAX7315_SLA_7B, WriteReg, &ReadReg, 2, 0);
-	
-	//Switch to SPI
-	//DeinitTWI();
-	//SPI_Init(SPI_SPEED_FCPU_DIV_2 | SPI_ORDER_MSB_FIRST | SPI_SCK_LEAD_FALLING | SPI_SAMPLE_TRAILING | SPI_MODE_MASTER);
 	
 	if(stat > 0)
 	{

@@ -27,8 +27,8 @@
 
 volatile uint16_t	ElapsedMS;
 
-uint8_t ButtonState;
-uint8_t OldButtonState;
+//uint8_t ButtonState;
+//uint8_t OldButtonState;
 
 /**Saftey limits. If these temperatures are exceeded, the relay will be shut off. */
 uint8_t EEMEM NV_RED_TEMP_SAFTEY_LIMIT[3];			//The maximum allowable temperature on the red thermistor
@@ -42,9 +42,13 @@ uint8_t EEMEM NV_CURRENT_ZERO_CAL[3];				//The zero point for the current calibr
 
 void HardwareInit( void )
 {
+	//uint8_t stat;
+	
+	BH_InitStatus();
+
 	ElapsedMS	= 0x0000;
-	OldButtonState = 0xFF;
-	ButtonState = 0xFF;
+	//OldButtonState = 0xFF;
+	//ButtonState = 0xFF;
 	
 	/* Disable watchdog if enabled by bootloader/fuses */
 	MCUSR &= ~(1 << WDRF);
@@ -115,7 +119,11 @@ void HardwareInit( void )
 	
 	//Initalize peripherals
 	AD7794Init();
-	MAX7315Init();
+	
+	if(MAX7315Init() == 0x00)	//todo: check for I2C Init errors here and set the CPU flag as well...
+	{
+		BH_SetStatus(BH_STATUS_HW, BH_STATUS_HW_MAX7315, STATUS_HW_OK);
+	}
 	AT45DB321D_Init();
 	DS3232M_Init();
 	
@@ -128,6 +136,15 @@ void HardwareInit( void )
 
 void LED(uint8_t LEDValue, uint8_t LEDState)
 {
+	uint8_t stat;
+	
+	//Check to see if the MAX7315 is initalized properly
+	stat = BH_GetStatus(BH_STATUS_HW);
+	if((stat & BH_STATUS_HW_MAX7315) != 0x00)
+	{
+		return;
+	}
+	
 	if(LEDValue == 2)
 	{
 		if(LEDState == 1)
@@ -138,6 +155,7 @@ void LED(uint8_t LEDValue, uint8_t LEDState)
 		{
 			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x04, 0x04);
 		}
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_LED2, LEDState);
 	}
 	else if(LEDValue == 3)
 	{
@@ -149,6 +167,7 @@ void LED(uint8_t LEDValue, uint8_t LEDState)
 		{
 			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x01, 0x01);
 		}
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_LED3, LEDState);
 	}
 	else if(LEDValue == 1)
 	{
@@ -161,6 +180,28 @@ void LED(uint8_t LEDValue, uint8_t LEDState)
 		{
 			MAX7315ModifyReg(MAX7315_REG_BLINK0, 0x02, 0x02);
 		}
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_LED1, LEDState);
+	}
+	return;
+}
+
+void HandleButtonPress( void )
+{
+	uint8_t ButtonsPending;
+	
+	ButtonsPending = BH_GetStatus(BH_STATUS_HIO);
+	if((ButtonsPending & BH_STATUS_HIO_B1_PEND) == BH_STATUS_HIO_B1_PEND)
+	{
+		//Red button was pressed
+		printf_P(PSTR("b1\n"));
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B1_PEND, 0);
+	}
+	
+	if((ButtonsPending & BH_STATUS_HIO_B2_PEND) == BH_STATUS_HIO_B2_PEND)
+	{
+		//Black button was pressed
+		printf_P(PSTR("b2\n"));
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B2_PEND, 0);
 	}
 	return;
 }
@@ -221,13 +262,13 @@ void BuzzerOff(void)
 	return;
 }
 
-//This will check the state of the buttons
+//Check the state of the buttons
+//The button state is inverted, as the output of the buttons is high when the button is not pressed
 uint8_t GetButtonState( void )
 {
 	uint8_t DataToReceive;
-	
 	MAX7315ReadReg(MAX7315_REG_INPUTS, &DataToReceive);
-	DataToReceive = ((DataToReceive & 0x0C) >> 2);
+	DataToReceive = (DataToReceive >> 4) & 0x03;
 	return ~DataToReceive;
 }
 
@@ -601,29 +642,34 @@ ISR(TIMER3_COMPA_vect)
 	PORTF ^= (1<<5);
 }
 
+//Triggered on a change of button state
 ISR(INT2_vect)
 {
-	MAX7315ReadReg(MAX7315_REG_INPUTS, &ButtonState);
-	//printf_P(PSTR("bs: 0x%02X\n"), ButtonState);
+	uint8_t TheButtonState;
+	uint8_t TheOldButtonState;
 	
-	if(((ButtonState & (1<<4)) == 0x00) && ((OldButtonState & (1<<4)) == (1<<4)))
+	//Get the button state
+	TheButtonState = GetButtonState();
+	//MAX7315ReadReg(MAX7315_REG_INPUTS, &TheButtonState);
+	//TheButtonState = (TheButtonState >> 4) & 0x03;
+	//printf_P(PSTR("bs: 0x%02X\n"), TheButtonState);
+	TheOldButtonState = BH_GetStatus(BH_STATUS_HIO);
+	
+	//Check to see what button state changed
+	if ( ((TheButtonState & 0x01) == 0x01) && ((TheOldButtonState & BH_STATUS_HIO_B1_OLD) == 0x00) )
 	{
+		//Button 1 down
 		//printf_P(PSTR("b1\n"));
-		LED(1,1);
-		LED(2,1);
-		LED(3,1);
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B1_PEND, 1);
 	}
-	else if(((ButtonState&(1<<5)) == 0x00) && ((OldButtonState & (1<<5)) == (1<<5)))
+	
+	if ( ((TheButtonState & 0x02) == 0x02) && ((TheOldButtonState & BH_STATUS_HIO_B2_OLD) == 0x00) )
 	{
+		//Button 2 down
 		//printf_P(PSTR("b2\n"));
-		LED(1,0);
-		LED(2,0);
-		LED(3,0);
+		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B2_PEND, 1);
 	}
 
-
-	//printf_P(PSTR("b\n"));
-	OldButtonState = ButtonState;
 }
 
 /** @} */

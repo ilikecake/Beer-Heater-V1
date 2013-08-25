@@ -1,2 +1,2 @@
 #include <avr/pgmspace.h>
-const char fwCompileDate[] PROGMEM = "Build: 20130614.2148\r\n";
+const char fwCompileDate[] PROGMEM = "Build: 20130825.1134\r\n";
