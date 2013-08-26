@@ -57,7 +57,7 @@
 #define DS3232M_REG_TEMP_LO		0x12
 #define DS3232M_REG_TEST		0x03
 
-void DS3232M_Init( void );
+uint8_t DS3232M_Init( void );
 void DS3232M_GetStatus( void );
 void DS3232M_SetTime(TimeAndDate *TheTime);
 void DS3232M_GetTime(TimeAndDate *TheTime);

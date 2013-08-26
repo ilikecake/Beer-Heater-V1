@@ -27,24 +27,28 @@
 
 #include "main.h"
 
+//TODO: Add I2C status checking
+
 //Initalize the DS3232M
-void DS3232M_Init( void )
+uint8_t DS3232M_Init( void )
 {
 	uint8_t RecieveData;
 	uint8_t SendData[2];
+	uint8_t stat;
 
 	//Set up control register
 	// -Enable interrupt on INT/SQW pin, disable square wave output
 	// -Disable pending interrupts
 	SendData[0] = DS3232M_REG_CONTROL;
 	SendData[1] = 0x04;
-	TWIRW(DS3232M_SLA_ADDRESS, SendData, &RecieveData, 2, 0);
+	stat = TWIRW(DS3232M_SLA_ADDRESS, SendData, &RecieveData, 2, 0);
+	TWI_CHECKSTAT(stat);
 	
 	DS3232M_DisableAlarm(1);
 	DS3232M_DisableAlarm(2);
 	
 	
-	return;
+	return 0x00;
 }
 
 void DS3232M_GetStatus( void )
