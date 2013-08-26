@@ -92,7 +92,7 @@
 //Status register masks
 #define AT45DB321D_STATUS_READY_MASK				0x80
 
-void AT45DB321D_Init(void);
+uint8_t AT45DB321D_Init(void);
 void AT45DB321D_Select(void);
 void AT45DB321D_Deselect(void);
 
@@ -137,6 +137,9 @@ void AT45DB321D_Protect(void);
 
 /** Disabled write protection of the sectors defined in the sector protection register */
 void AT45DB321D_Unprotect(void);
+
+//Reads the chip ID from the AT45DB321D (3 bytes long)
+void AT45DB321D_ReadID(uint8_t *DataByteRead);
 
 /** Set the page size to 512 */
 void AT45DB321D_SwitchTo512(void);

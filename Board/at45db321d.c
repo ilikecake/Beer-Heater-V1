@@ -25,10 +25,23 @@
 
 #include "main.h"
 
-void AT45DB321D_Init(void)
+/** Returns 0 if the device initalizes correctly, 0xFF if not */
+uint8_t AT45DB321D_Init(void)
 {
+	uint8_t DataByteRead[3];
+	
 	AT45DB321D_Deselect();
-	return;
+	
+	//Check the device ID.
+	AT45DB321D_ReadID(DataByteRead);
+	
+	//The first two bytes must match for the device to be recognized
+	if((DataByteRead[0] == 0x1F) && (DataByteRead[1] == 0x27))
+	{
+		return 0x00;
+	}
+	
+	return 0xFF;
 }
 
 void AT45DB321D_Select(void)
@@ -280,6 +293,22 @@ void AT45DB321D_Unprotect(void)
 	AT45DB321D_Deselect();
 	return;
 }
+
+void AT45DB321D_ReadID(uint8_t *DataByteRead)
+{
+	AT45DB321D_Select();
+	AT45DB321D_SPISEND(AT45DB321D_CMD_READ_DEVICE_ID);
+	DataByteRead[0] = AT45DB321D_SPISEND(0x00);
+	DataByteRead[1] = AT45DB321D_SPISEND(0x00);
+	DataByteRead[2] = AT45DB321D_SPISEND(0x00);
+	AT45DB321D_Deselect();
+	return;
+}
+
+
+
+
+
 
 //This command should only need to be sent once. It can not be undone.
 //The device needs to be power cycled after this command is sent.
