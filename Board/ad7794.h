@@ -148,7 +148,7 @@
 #define AD7794_TEMP_CAL_Z			58
 
 //Low Level Functions
-void AD7794Init( void );
+uint8_t AD7794Init( void );
 void AD7794Select(uint8_t sel);
 void AD7794SendReset( void );
 uint8_t AD7794WaitReady( void );

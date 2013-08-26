@@ -27,28 +27,16 @@
 
 float EEMEM NV_AD7794_INTERNAL_TEMP_CAL;		//Store the internal temperature calibration in non-volatile memory
 
-void AD7794Init( void )
+uint8_t AD7794Init( void )
 {
 	uint8_t SendData[3];
 	
 	AD7794SendReset();
 	
-	
 	//Calibrate channels
 	SendData[1] = (AD7794_CRH_BIPOLAR|AD7794_CRH_GAIN_1);
 	SendData[0] = (AD7794_CRL_REF_INT|AD7794_CRL_REF_DETECT|AD7794_CRL_BUFFER_ON|AD7794_CRL_CHANNEL_AIN2);
 	AD7794WriteReg(AD7794_CR_REG_CONFIG, SendData);
-	
-	/*
-	//Calibrate zero
-	SendData[1] = AD7794_MRH_MODE_IZ_CAL & AD7794_CR_REG_MODE_MASK_H;
-	SendData[0] = (AD7794_MRL_CLK_INT_NOOUT | AD7794_MRL_UPDATE_RATE_10_HZ) & AD7794_CR_REG_MODE_MASK_L;
-	AD7794WriteReg(AD7794_CR_REG_MODE, SendData);
-	
-	
-	
-	
-	*/
 	
 	//Put ADC in idle mode
 	SendData[1] = AD7794_MRH_MODE_IDLE;
@@ -58,8 +46,16 @@ void AD7794Init( void )
 	//Clear data from the data register
 	AD7794ReadReg(AD7794_CR_REG_DATA, SendData);
 	
+	//Check the status of the device
+	AD7794ReadReg(AD7794_CR_REG_STATUS, SendData);
 	
-	return;
+	//The ready bit will not be set as the part is in standby without data in the register.
+	//If the initalization options are modified, this value will need to be modified to match.
+	if(SendData[0] == 0x89)
+	{
+		return 0x00;
+	}
+	return 0xFF;
 }
 
 //sel = 1 to select the chip
