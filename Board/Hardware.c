@@ -118,14 +118,29 @@ void HardwareInit( void )
 	TCNT3L = 0x00;
 	
 	//Initalize peripherals
-	AD7794Init();
+	if(AD7794Init() == 0x00)	//TODO: check for SPI Init errors here and set the CPU flag as well...
+	{
+		BH_SetStatus(BH_STATUS_HW, BH_STATUS_HW_AD7794, STATUS_HW_OK);
+	}
+	//AD7794Init();
 	
-	if(MAX7315Init() == 0x00)	//todo: check for I2C Init errors here and set the CPU flag as well...
+	if(MAX7315Init() == 0x00)	//TODO: check for I2C Init errors here and set the CPU flag as well...
 	{
 		BH_SetStatus(BH_STATUS_HW, BH_STATUS_HW_MAX7315, STATUS_HW_OK);
 	}
-	AT45DB321D_Init();
-	DS3232M_Init();
+	
+	if(AT45DB321D_Init() == 0x00)	//todo: check for SPI Init errors here and set the CPU flag as well...
+	{
+		BH_SetStatus(BH_STATUS_HW, BH_STATUS_HW_AT45DB321D, STATUS_HW_OK);
+	}
+	//AT45DB321D_Init();
+	
+	if(DS3232M_Init() == 0x00)	//todo: check for SPI Init errors here and set the CPU flag as well...
+	{
+		BH_SetStatus(BH_STATUS_HW, BH_STATUS_HW_DS3232M, STATUS_HW_OK);
+	}
+	
+	//DS3232M_Init();
 	
 	//Enable USB and interrupts
 	USB_Init();
@@ -193,15 +208,61 @@ void HandleButtonPress( void )
 	if((ButtonsPending & BH_STATUS_HIO_B1_PEND) == BH_STATUS_HIO_B1_PEND)
 	{
 		//Red button was pressed
-		printf_P(PSTR("b1\n"));
+		//printf_P(PSTR("b1\n"));
 		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B1_PEND, 0);
+		
+		if((ButtonsPending & BH_STATUS_HIO_LED1) == BH_STATUS_HIO_LED1)
+		{
+			if((ButtonsPending & BH_STATUS_HIO_LED2) == BH_STATUS_HIO_LED2)
+			{
+				if((ButtonsPending & BH_STATUS_HIO_LED3) == BH_STATUS_HIO_LED3)
+				{
+					return;
+				}
+				else
+				{
+					LED(3,1);
+				}
+			}
+			else
+			{
+				LED(2,1);
+			}
+		}
+		else
+		{
+			LED(1,1);
+		}
+		
 	}
-	
-	if((ButtonsPending & BH_STATUS_HIO_B2_PEND) == BH_STATUS_HIO_B2_PEND)
+	else if((ButtonsPending & BH_STATUS_HIO_B2_PEND) == BH_STATUS_HIO_B2_PEND)
 	{
 		//Black button was pressed
-		printf_P(PSTR("b2\n"));
+		//printf_P(PSTR("b2\n"));
 		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B2_PEND, 0);
+		
+		if((ButtonsPending & BH_STATUS_HIO_LED3) == 0x00)
+		{
+			if((ButtonsPending & BH_STATUS_HIO_LED2) == 0x00)
+			{
+				if((ButtonsPending & BH_STATUS_HIO_LED1) == 0x00)
+				{
+					return;
+				}
+				else
+				{
+					LED(1,0);
+				}
+			}
+			else
+			{
+				LED(2,0);
+			}
+		}
+		else
+		{
+			LED(3,0);
+		}
 	}
 	return;
 }
@@ -650,8 +711,6 @@ ISR(INT2_vect)
 	
 	//Get the button state
 	TheButtonState = GetButtonState();
-	//MAX7315ReadReg(MAX7315_REG_INPUTS, &TheButtonState);
-	//TheButtonState = (TheButtonState >> 4) & 0x03;
 	//printf_P(PSTR("bs: 0x%02X\n"), TheButtonState);
 	TheOldButtonState = BH_GetStatus(BH_STATUS_HIO);
 	

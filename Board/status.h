@@ -38,10 +38,10 @@
 
 //Bitfield defines in the status registers
 #define BH_STATUS_HW_CPU			0x01	//A one in this location indicates an error in the AVR CPU I2C, SPI, etc...
-#define BH_STATUS_HW_MAX7315		0x02	//A one in this location indicates an error with the MAX7315 expander
-#define BH_STATUS_HW_AD7794			0x04	//A one in this location indicates an error with the AD7794 A/D converter
-#define BH_STATUS_HW_AT45DB321D		0x08	//A one in this location indicates an error with the AT45DB321D flash memory
-#define BH_STATUS_HW_DS3232M		0x10	//A one in this location indicates an error with the DS3232M RTC
+#define BH_STATUS_HW_MAX7315		0x10	//A one in this location indicates an error with the MAX7315 expander
+#define BH_STATUS_HW_AD7794			0x20	//A one in this location indicates an error with the AD7794 A/D converter
+#define BH_STATUS_HW_AT45DB321D		0x40	//A one in this location indicates an error with the AT45DB321D flash memory
+#define BH_STATUS_HW_DS3232M		0x80	//A one in this location indicates an error with the DS3232M RTC
 
 #define BH_STATUS_HIO_B1_PEND		0x01	//Set to 1 if button 1 (red) has been pressed
 #define BH_STATUS_HIO_B2_PEND		0x02	//Set to 1 if button 2 (black) has been pressed

@@ -536,6 +536,7 @@ static int _F13_Handler (void)
 	uint8_t arg1 = argAsInt(1);
 	uint8_t arg2;
 	uint8_t arg3;
+	uint8_t ReadBytes[3];
 	
 	switch (arg1)
 	{
@@ -562,6 +563,17 @@ static int _F13_Handler (void)
 			printf_P(PSTR("HW Status: 0x%02X\n"), BH_GetStatus(BH_STATUS_HW));
 			printf_P(PSTR("HIO Status: 0x%02X\n"), BH_GetStatus(BH_STATUS_HIO));
 			printf_P(PSTR("Prog Status: 0x%02X\n"), BH_GetStatus(BH_STATUS_PROG));
+			break;
+			
+		case 4:
+			AT45DB321D_ReadID(ReadBytes);
+			printf_P(PSTR("ID1: 0x%02X\n"), ReadBytes[0]);
+			printf_P(PSTR("ID2: 0x%02X\n"), ReadBytes[1]);
+			printf_P(PSTR("ID3: 0x%02X\n"), ReadBytes[2]);
+			break;
+			
+		case 5:
+			DS3232M_GetStatus();
 			break;
 	
 	}
