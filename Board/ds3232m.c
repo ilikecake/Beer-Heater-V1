@@ -30,24 +30,35 @@
 //TODO: Add I2C status checking
 
 //Initalize the DS3232M
+//TODO: Make this function check the osc stopped bit and return somthing different if the oscilator has been stopped. (needed for restart)
 uint8_t DS3232M_Init( void )
 {
 	uint8_t RecieveData;
 	uint8_t SendData[2];
 	uint8_t stat;
 
+	//Read the status register
+	//If the OSF bit (bit 7) is 1, the oscillator has stopped since last initalization.
+	SendData[0] = DS3232M_REG_STATUS;
+	stat = TWIRW(DS3232M_SLA_ADDRESS, SendData, &RecieveData, 1, 1);
+	TWI_CHECKSTAT(stat);
+
 	//Set up control register
 	// -Enable interrupt on INT/SQW pin, disable square wave output
 	// -Disable pending interrupts
 	SendData[0] = DS3232M_REG_CONTROL;
-	SendData[1] = 0x04;
-	stat = TWIRW(DS3232M_SLA_ADDRESS, SendData, &RecieveData, 2, 0);
+	SendData[1] = 0x00;
+	stat = TWIRW(DS3232M_SLA_ADDRESS, SendData, &NULL, 2, 0);
 	TWI_CHECKSTAT(stat);
 	
 	DS3232M_DisableAlarm(1);
 	DS3232M_DisableAlarm(2);
 	
-	
+	if((RecieveData & 0x80) == 0x80)
+	{
+		//If the oscillator has been stopped since the last init
+		return 0x01;
+	}
 	return 0x00;
 }
 

@@ -37,7 +37,7 @@
 #define BH_STATUS_PROG		0x03	//Holds status of the timer program
 
 //Bitfield defines in the status registers
-#define BH_STATUS_HW_CPU			0x01	//A one in this location indicates an error in the AVR CPU I2C, SPI, etc...
+#define BH_STATUS_HW_CPU			0x0F	//A one in this location indicates an error in the AVR CPU I2C, SPI, etc... TODO: Change this to a four bit error code to indicate problems
 #define BH_STATUS_HW_MAX7315		0x10	//A one in this location indicates an error with the MAX7315 expander
 #define BH_STATUS_HW_AD7794			0x20	//A one in this location indicates an error with the AD7794 A/D converter
 #define BH_STATUS_HW_AT45DB321D		0x40	//A one in this location indicates an error with the AT45DB321D flash memory
@@ -50,6 +50,14 @@
 #define BH_STATUS_HIO_LED1			0x10	//The state of LED1
 #define BH_STATUS_HIO_LED2			0x20	//The state of LED2
 #define BH_STATUS_HIO_LED3			0x40	//The state of LED3
+
+#define BH_STATUS_PROG_CONTROL_ON			0x01	//A one in this location indicates that the temperature controller is running.
+#define BH_STATUS_PROG_RELAY_ON				0x02	//A one in this location indicates that the relay is closed and the heater is on.
+#define BH_STATUS_PROG_RED_TEMP_HEATER		0x04	//A one in this location indicates that the red temperature sensor is the heater temperature. If this bit is zero, the black sensor will be used as heater temperature.
+
+#define BH_STATUS_PROG_RED_HEATER_OVERTEMP		0x20	//A one in this location indicated that an overtemperature event was detected on the red temperature sensor.
+#define BH_STATUS_PROG_BLACK_HEATER_OVERTEMP	0x40	//A one in this location indicated that an overtemperature event was detected on the black temperature sensor.
+#define BH_STATUS_PROG_INT_HEATER_OVERTEMP		0x80	//A one in this location indicated that an overtemperature event was detected on the internal temperature sensor.
 
 void BH_InitStatus(void);
 uint8_t BH_GetStatus(uint8_t StatusID);

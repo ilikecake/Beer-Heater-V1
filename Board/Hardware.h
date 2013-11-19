@@ -37,6 +37,11 @@ void HardwareInit( void );
 
 void HandleButtonPress( void );
 
+uint8_t StartTemperatureController(uint8_t Record);
+uint8_t StopTemperatureController(uint8_t Discard);
+
+void TemperatureControllerTask( void );
+
 void DelayMS(uint16_t ms);
 void DelaySEC(uint16_t SEC);
 

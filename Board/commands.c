@@ -575,6 +575,20 @@ static int _F13_Handler (void)
 		case 5:
 			DS3232M_GetStatus();
 			break;
+			
+		case 6:
+			arg2 = argAsInt(2);
+			if(arg2 == 1)
+			{
+				StartTemperatureController(0);
+				printf_P(PSTR("Controller on\n"));
+			}
+			else
+			{
+				StopTemperatureController(0);
+				printf_P(PSTR("Controller off\n"));
+			}
+			break;
 	
 	}
 	

@@ -35,7 +35,7 @@ void BH_InitStatus(void)
 {
 	//Initalize hardware status to 0xFF
 	BH_HardwareStatus = 0xFF;
-	BH_ProgramStatus = 0xFF;
+	BH_ProgramStatus = 0x00;
 	
 	//LEDs are initalized to off, buttons are pulled high
 	BH_HIOStatus = 0x80;

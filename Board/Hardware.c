@@ -26,18 +26,31 @@
 #include "main.h"
 
 volatile uint16_t	ElapsedMS;
+volatile uint8_t CountsFromRTC;
 
 //uint8_t ButtonState;
 //uint8_t OldButtonState;
 
 /**Saftey limits. If these temperatures are exceeded, the relay will be shut off. */
-uint8_t EEMEM NV_RED_TEMP_SAFTEY_LIMIT[3];			//The maximum allowable temperature on the red thermistor
-uint8_t EEMEM NV_BLACK_TEMP_SAFTEY_LIMIT[3];		//The maximum allowable temperature on the black thermistor
-uint8_t EEMEM NV_INTERNAL_TEMP_SAFTEY_LIMIT[3];		//The maximum allowable temperature on the ADC temperature sensor
+uint8_t EEMEM NV_RED_TEMP_SAFTEY_LIMIT;				//The maximum allowable temperature on the red thermistor (in degrees C)
+uint8_t EEMEM NV_BLACK_TEMP_SAFTEY_LIMIT;			//The maximum allowable temperature on the black thermistor (in degrees C)
+uint8_t EEMEM NV_INTERNAL_TEMP_SAFTEY_LIMIT;		//The maximum allowable temperature on the ADC temperature sensor (in degrees C)
 
-uint8_t EEMEM NV_SET_TEMPERATURE[3];				//The target fermentation temperature
+uint8_t EEMEM NV_SET_TEMPERATURE;					//The target fermentation temperature (in degrees C)
 uint8_t EEMEM NV_TEMP_REGULATING = 0;				//Set to 1 when the temperature regulation is active
 uint8_t EEMEM NV_CURRENT_ZERO_CAL[3];				//The zero point for the current calibration
+
+
+/**This is a set of data that is saved for the running average */
+//TODO: Make this into a struct?
+uint8_t NumberOfSamples;
+uint32_t RedTempAverage;
+uint32_t BlackTempAverage;
+uint32_t IntTempAverage;
+uint32_t HeaterVoltageAverage;
+uint32_t HeaterCurrentAverage;
+
+
 
 
 void HardwareInit( void )
@@ -46,6 +59,7 @@ void HardwareInit( void )
 	
 	BH_InitStatus();
 
+	CountsFromRTC = 0;
 	ElapsedMS	= 0x0000;
 	//OldButtonState = 0xFF;
 	//ButtonState = 0xFF;
@@ -77,9 +91,9 @@ void HardwareInit( void )
 	OCR0A = 124;
 
 	//Setup INT2 for button interrupts
-	EICRA = 0x20;	//Interrupt on falling edge of INT2
+	EICRA = 0xA0;	//Interrupt on falling edge of INT2, Interrupt on any edge of INT3
 	EIFR = 0xFF;	//Clear pending interrupts
-	EIMSK = 0x04;	//Enable INT2
+	EIMSK = 0x0C;	//Enable INT2
 	
 	//Setup GPIO Pins
 	
@@ -95,10 +109,11 @@ void HardwareInit( void )
 	
 	//PORT D:
 	//	2:  Button interrupt		(Input)
+	//	3:	RTC interrupt			(Input, pullup)
 	//	4:	A/D CS line				(Out, high)
 	//	6:	Relay control signal	(Out, low)
 	DDRD = (1<<4)|(1<<6);
-	PORTD = 0x10;
+	PORTD = (1<<3)|(1<<4);
 	
 	//PORT F:
 	//	5:	Buzzer	(Out, low)
@@ -197,6 +212,95 @@ void LED(uint8_t LEDValue, uint8_t LEDState)
 		}
 		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_LED1, LEDState);
 	}
+	return;
+}
+
+uint8_t StartTemperatureController(uint8_t Record)
+{
+	//Green LED is on when the controller is active
+	LED(2,1);
+	
+	RedTempAverage = 0;
+	BlackTempAverage = 0;
+	IntTempAverage = 0;
+	HeaterVoltageAverage = 0;
+	HeaterCurrentAverage = 0;
+	NumberOfSamples = 0;
+	
+	
+	
+	//TODO: Check for restart here
+	//check for overload bits and clear them if possible?
+	
+	//Calibrate the device
+	
+	//Write this status to EEMEM to check for restarts.
+	BH_SetStatus(BH_STATUS_PROG, BH_STATUS_PROG_CONTROL_ON, 1);
+	
+	Datalogger_Init( (DATALOGGER_INIT_APPEND|DATALOGGER_INIT_RESTART_IF_FULL) );
+	
+	//Check the heater temperature?
+	//Start data recording here...
+	
+
+	return 0;
+}
+
+uint8_t StopTemperatureController(uint8_t Discard)
+{
+	BH_SetStatus(BH_STATUS_PROG, BH_STATUS_PROG_CONTROL_ON, 0);
+	
+	//Write final datapoint?
+	//Write final status to EEMEM to avoid accidental restarts
+	
+	
+	//Turn off green LED
+	LED(2,0);
+	
+	return 0;
+}
+
+
+void TemperatureControllerTask( void )
+{
+	uint8_t ProgStatus;
+	
+	ProgStatus = BH_GetStatus(BH_STATUS_PROG);
+
+	if(CountsFromRTC == 10 && ((ProgStatus&BH_STATUS_PROG_CONTROL_ON) == BH_STATUS_PROG_CONTROL_ON))
+	{
+		LED(3,1);
+		
+		uint8_t Dataset[16];
+		GetData(Dataset);
+		
+		if(NumberOfSamples < 6)
+		{
+			
+			//Add this sample to the average
+			
+		
+		
+		
+		
+			NumberOfSamples++;
+		}
+		else
+		{
+			//Write samples to datalogger
+			//clear averages
+		}
+		
+		
+		
+		
+		LED(3,0);
+		
+		//printf_P(PSTR("Taking Measurments\n"));
+		CountsFromRTC = 0;
+	}
+
+
 	return;
 }
 
@@ -729,6 +833,16 @@ ISR(INT2_vect)
 		BH_SetStatus(BH_STATUS_HIO, BH_STATUS_HIO_B2_PEND, 1);
 	}
 
+}
+
+ISR(INT3_vect)
+{
+	CountsFromRTC++;
+	//printf_P(PSTR("%d\n"), CountsFromRTC);
+	if(CountsFromRTC > 10)
+	{
+		CountsFromRTC = CountsFromRTC - 10;
+	}
 }
 
 /** @} */

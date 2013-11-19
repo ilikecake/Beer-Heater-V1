@@ -92,6 +92,7 @@ int main(void)
 	{
 		RunCommand();
 		HandleButtonPress();
+		TemperatureControllerTask();
 	}
 }
 
